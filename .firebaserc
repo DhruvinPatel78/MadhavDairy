@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "madhavdairy-bc0b5"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
