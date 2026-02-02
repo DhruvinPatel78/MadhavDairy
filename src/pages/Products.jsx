@@ -13,6 +13,8 @@ import { auth, db } from "../firebase";
 import ProductForm from "../components/ProductForm";
 import ProductList from "../components/ProductList";
 import Modal from "../components/Modal";
+import { Button } from '@mui/material';
+import { Add } from '@mui/icons-material';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -130,13 +132,14 @@ const Products = () => {
             <h1 className="text-2xl font-semibold text-gray-900">Products</h1>
             {/*<p className="text-sm text-gray-500 mt-1">Manage dairy products</p>*/}
           </div>
-          <button
+          <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
           >
-            <span>+</span>
             Add New Product
-          </button>
+          </Button>
         </div>
       </div>
 

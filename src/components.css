@@ -54,7 +54,6 @@
 .auth-input:focus {
   outline: none;
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .auth-button {
@@ -369,10 +368,19 @@
   background-color: white;
 }
 
+.form-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.form-input[type="number"]::-webkit-outer-spin-button,
+.form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .form-input:focus {
   outline: none;
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-input:hover {
@@ -549,41 +557,5 @@
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
-  }
-
-  .table-actions {
-    justify-content: center;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .data-table {
-    font-size: 0.875rem;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 2rem;
-    margin: 1rem;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-
-  .stat-number {
-    font-size: 2rem;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
   }
 }

@@ -14,6 +14,8 @@ import CustomerForm from "../components/CustomerForm";
 import CustomerList from "../components/CustomerList";
 import Modal from "../components/Modal";
 import { formatTotalDue } from "../utils/formatters";
+import { Button } from '@mui/material';
+import { Add } from '@mui/icons-material';
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -44,9 +46,9 @@ const Customers = () => {
     try {
       setLoading(true);
       setError(null);
-      const [customersSnapshot, salesSnapshot] = await Promise.all([
+      const [customersSnapshot, sellsSnapshot] = await Promise.all([
         getDocs(customersRef),
-        getDocs(collection(db, "sales")),
+        getDocs(collection(db, "sells")),
       ]);
 
       setCustomers(
@@ -57,19 +59,19 @@ const Customers = () => {
       );
 
       // Calculate customer dues from database (primary source)
-      const sales = salesSnapshot.docs.map((doc) => ({
+      const sells = sellsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       const dues = {};
-      
+
       // Get totalDue from customer records (can be positive for due or negative for credit)
       customersSnapshot.docs.forEach((doc) => {
         const customerData = doc.data();
         // Always use database totalDue value, can be positive (due) or negative (credit)
         dues[doc.id] = customerData.totalDue || 0;
       });
-      
+
       setCustomerDues(dues);
     } catch (err) {
       console.error("Error fetching customers:", err);
@@ -89,12 +91,17 @@ const Customers = () => {
       setError(null);
       const customerData = {
         ...data,
-        createdAt: selectedCustomer?.id ? selectedCustomer.createdAt : new Date(),
-        updatedAt: new Date()
+        createdAt: selectedCustomer?.id
+          ? selectedCustomer.createdAt
+          : new Date(),
+        updatedAt: new Date(),
       };
-      
+
       if (selectedCustomer?.id) {
-        await updateDoc(doc(db, "customers", selectedCustomer.id), customerData);
+        await updateDoc(
+          doc(db, "customers", selectedCustomer.id),
+          customerData,
+        );
       } else {
         await addDoc(customersRef, customerData);
       }
@@ -154,13 +161,14 @@ const Customers = () => {
             {/*  Manage customer information*/}
             {/*</p>*/}
           </div>
-          <button
+          <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
           >
-            <span>+</span>
             Add New Customer
-          </button>
+          </Button>
         </div>
       </div>
 

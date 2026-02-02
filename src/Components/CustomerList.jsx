@@ -1,7 +1,8 @@
 import { useState } from "react";
 import CustomerDetails from "./CustomerDetails";
 import DataTable from "./DataTable";
-import { MdVisibility, MdEdit, MdDelete } from "react-icons/md";
+import { IconButton, Chip } from '@mui/material';
+import { Visibility, Edit, Delete } from '@mui/icons-material';
 import { formatTotalDue } from "../utils/formatters";
 
 const CustomerList = ({ customers, onEdit, onDelete, onView }) => {
@@ -20,6 +21,7 @@ const CustomerList = ({ customers, onEdit, onDelete, onView }) => {
     { header: "Name" },
     { header: "Phone" },
     { header: "Address" },
+    { header: "Status" },
     { header: "Payment Status" },
     { header: "Action" },
   ];
@@ -36,6 +38,13 @@ const CustomerList = ({ customers, onEdit, onDelete, onView }) => {
         <div className="text-sm text-gray-500">{customer.address}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          customer.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {customer.isActive !== false ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${formatTotalDue(customer.totalDue).className}`}>
           {formatTotalDue(customer.totalDue).status}
         </span>
@@ -44,29 +53,30 @@ const CustomerList = ({ customers, onEdit, onDelete, onView }) => {
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-        <button
-          onClick={() =>
-            onView ? onView(customer) : setSelectedCustomer(customer)
-          }
-          className="text-gray-400 hover:text-gray-600  cursor-pointer"
+        <IconButton
+          onClick={() => onView ? onView(customer) : setSelectedCustomer(customer)}
+          color="default"
+          size="small"
           title="View"
         >
-          <MdVisibility className="w-4 h-4" />
-        </button>
-        <button
+          <Visibility fontSize="small" />
+        </IconButton>
+        <IconButton
           onClick={() => onEdit(customer)}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          color="primary"
+          size="small"
           title="Edit"
         >
-          <MdEdit className="w-4 h-4" />
-        </button>
-        <button
+          <Edit fontSize="small" />
+        </IconButton>
+        <IconButton
           onClick={() => onDelete(customer.id)}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          color="error"
+          size="small"
           title="Delete"
         >
-          <MdDelete className="w-4 h-4" />
-        </button>
+          <Delete fontSize="small" />
+        </IconButton>
       </td>
     </tr>
   );

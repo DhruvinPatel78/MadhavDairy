@@ -14,9 +14,13 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
 import DataTable from "../Components/DataTable";
 import Modal from "../Components/Modal";
-import Input from "../Components/Input";
-import SearchableDropdown from "../Components/SearchableDropdown";
+import { Input, Button, Select, SearchableDropdown, DateInput } from "../Components";
 import moment from "moment";
+import {
+  IconButton,
+  Chip
+} from '@mui/material';
+import { Add, Edit, Delete, Refresh } from '@mui/icons-material';
 import {
   FiDollarSign,
   FiPlus,
@@ -25,7 +29,7 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 
-const ExpensesManagement = () => {
+const Expenses = () => {
   const [user, setUser] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +46,7 @@ const ExpensesManagement = () => {
     amount: "",
     paymentMode: "",
     description: "",
-    date: moment().format('YYYY-MM-DD'),
+    date: moment().format("YYYY-MM-DD"),
   });
 
   const expenseCategories = [
@@ -61,6 +65,12 @@ const ExpensesManagement = () => {
     { label: "UPI", value: "upi" },
     { label: "Bank Transfer", value: "bank" },
     { label: "Cheque", value: "cheque" },
+  ];
+
+  const dateFilterOptions = [
+    { label: "Today", value: "today" },
+    { label: "This Month", value: "monthly" },
+    { label: "Custom Date", value: "custom" },
   ];
 
   useEffect(() => {
@@ -152,7 +162,7 @@ const ExpensesManagement = () => {
         amount: parseFloat(expenseForm.amount),
         timestamp: new Date(expenseForm.date + "T00:00:00"),
         createdAt: editingExpense ? editingExpense.createdAt : new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       if (editingExpense) {
@@ -185,7 +195,9 @@ const ExpensesManagement = () => {
       amount: expense.amount.toString(),
       paymentMode: expense.paymentMode,
       description: expense.description || "",
-      date: expense.timestamp ? moment(expense.timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+      date: expense.timestamp
+        ? moment(expense.timestamp).format("YYYY-MM-DD")
+        : moment().format("YYYY-MM-DD"),
     });
     setShowModal(true);
   };
@@ -249,39 +261,45 @@ const ExpensesManagement = () => {
   const renderRows = (expense, index) => (
     <tr key={expense.id || index} className="hover:bg-gray-50">
       <td className="px-6 py-4 text-sm text-gray-900">
-        {expense.timestamp ? moment(expense.timestamp).format('DD/MM/YYYY') : "N/A"}
+        {expense.timestamp
+          ? moment(expense.timestamp).format("DD/MM/YYYY")
+          : "N/A"}
       </td>
+      <td className="px-6 py-4 text-sm text-gray-900">{expense.name}</td>
       <td className="px-6 py-4 text-sm text-gray-900">
-        {expense.name}
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-900">
-        {expenseCategories.find(c => c.value === expense.category)?.label || expense.category}
+        {expenseCategories.find((c) => c.value === expense.category)?.label ||
+          expense.category}
       </td>
       <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
         ₹{expense.amount?.toFixed(2) || 0}
       </td>
       <td className="px-6 py-4">
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-          {expense.paymentMode}
-        </span>
+        <Chip 
+          label={expense.paymentMode}
+          color="primary"
+          size="small"
+          sx={{ textTransform: 'capitalize' }}
+        />
       </td>
       <td className="px-6 py-4 text-sm text-gray-500">
         {expense.description || "-"}
       </td>
       <td className="px-6 py-4">
         <div className="flex gap-2">
-          <button
+          <IconButton
             onClick={() => handleEdit(expense)}
-            className="text-blue-600 hover:text-blue-800"
+            color="primary"
+            size="small"
           >
-            <FiEdit />
-          </button>
-          <button
+            <Edit fontSize="small" />
+          </IconButton>
+          <IconButton
             onClick={() => handleDelete(expense.id)}
-            className="text-red-600 hover:text-red-800"
+            color="error"
+            size="small"
           >
-            <FiTrash2 />
-          </button>
+            <Delete fontSize="small" />
+          </IconButton>
         </div>
       </td>
     </tr>
@@ -303,17 +321,18 @@ const ExpensesManagement = () => {
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/*<FiDollarSign className="text-2xl text-red-600" />*/}
             <h1 className="text-2xl font-semibold text-gray-900 !mb-0">
-              Expenses Management
+              Expenses
             </h1>
           </div>
-          <button
+          <Button
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
           >
-            <FiPlus /> Add Expense
-          </button>
+            Add Expense
+          </Button>
         </div>
       </div>
 
@@ -328,55 +347,43 @@ const ExpensesManagement = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Filter
-              </label>
-              <select
+              <Select
+                label="Date Filter"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="today">Today</option>
-                <option value="monthly">This Month</option>
-                <option value="custom">Custom Date</option>
-              </select>
+                options={dateFilterOptions}
+              />
             </div>
 
             {dateFilter === "custom" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Date
-                </label>
-                <input
-                  type="date"
+                <DateInput
+                  label="Select Date"
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
+              <Input
+                label="Search"
                 placeholder="Search expenses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <button
+              <Button
                 onClick={fetchExpenses}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                variant="contained"
+                color="primary"
+                startIcon={<Refresh />}
+                fullWidth
               >
-                <FiCalendar className="inline mr-2" />
                 Refresh
-              </button>
+              </Button>
             </div>
 
             <div className="bg-red-50 p-4 rounded-lg">
@@ -458,9 +465,8 @@ const ExpensesManagement = () => {
               required
             />
 
-            <Input
+            <DateInput
               label="Date"
-              type="date"
               value={expenseForm.date}
               onChange={(e) =>
                 setExpenseForm({ ...expenseForm, date: e.target.value })
@@ -468,41 +474,41 @@ const ExpensesManagement = () => {
               required
             />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={expenseForm.description}
-                onChange={(e) =>
-                  setExpenseForm({
-                    ...expenseForm,
-                    description: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="3"
-                placeholder="Optional description..."
-              />
-            </div>
+            <Input
+              label="Description"
+              value={expenseForm.description}
+              onChange={(e) =>
+                setExpenseForm({
+                  ...expenseForm,
+                  description: e.target.value,
+                })
+              }
+              multiline
+              rows={3}
+              placeholder="Optional description..."
+            />
 
             <div className="flex gap-3 pt-4">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setShowModal(false);
                   setEditingExpense(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                variant="outlined"
+                color="inherit"
+                fullWidth
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                variant="contained"
+                color="primary"
+                fullWidth
               >
                 {editingExpense ? "Update" : "Add"} Expense
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>
@@ -511,4 +517,4 @@ const ExpensesManagement = () => {
   );
 };
 
-export default ExpensesManagement;
+export default Expenses;

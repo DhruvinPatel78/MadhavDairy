@@ -25,42 +25,42 @@ const CustomerDetailsModal = ({
     try {
       const amount = parseFloat(paymentAmount);
 
-      // Get pending/partial sales for this customer
+      // Get pending/partial sells for this customer
       const q = query(
-        collection(db, "sales"),
+        collection(db, "sells"),
         where("customerId", "==", customer.id),
       );
       const snapshot = await getDocs(q);
 
       let remainingPayment = amount;
 
-      // Update sales from oldest to newest
+      // Update sells from oldest to newest
       for (const docSnapshot of snapshot.docs) {
         if (remainingPayment <= 0) break;
 
-        const sale = docSnapshot.data();
+        const sell = docSnapshot.data();
         const outstandingAmount =
-          (sale.remainingAmount || sale.totalAmount || sale.totalPrice || 0) -
-          (sale.paidAmount || 0);
+          (sell.remainingAmount || sell.totalAmount || sell.totalPrice || 0) -
+          (sell.paidAmount || 0);
 
-        if (outstandingAmount <= 0) continue; // Skip fully paid sales
+        if (outstandingAmount <= 0) continue; // Skip fully paid sells
 
-        const paymentForThisSale = Math.min(
+        const paymentForThissell = Math.min(
           remainingPayment,
           outstandingAmount,
         );
-        const newPaidAmount = (sale.paidAmount || 0) + paymentForThisSale;
+        const newPaidAmount = (sell.paidAmount || 0) + paymentForThissell;
         const newRemainingAmount =
-          (sale.totalAmount || sale.totalPrice || 0) - newPaidAmount;
+          (sell.totalAmount || sell.totalPrice || 0) - newPaidAmount;
 
-        await updateDoc(doc(db, "sales", docSnapshot.id), {
+        await updateDoc(doc(db, "sells", docSnapshot.id), {
           paidAmount: newPaidAmount,
           remainingAmount: Math.max(0, newRemainingAmount),
           paymentStatus: newRemainingAmount <= 0 ? "paid" : "partial",
           updatedAt: new Date(),
         });
 
-        remainingPayment -= paymentForThisSale;
+        remainingPayment -= paymentForThissell;
       }
 
       // Update customer's totalDue in database
@@ -68,7 +68,7 @@ const CustomerDetailsModal = ({
       await updateDoc(doc(db, "customers", customer.id), {
         totalDue: newTotalDue,
         lastPaymentDate: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       if (onPaymentUpdate) {

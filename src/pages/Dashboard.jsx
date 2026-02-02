@@ -10,13 +10,15 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { MdInventory, MdPeople, MdAttachMoney, MdAdd } from "react-icons/md";
+import { Box, Grid, Alert } from '@mui/material';
+import { PageHeader, StatCard, Button, Loading } from '../Components';
 import moment from "moment";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
     products: 0,
     customers: 0,
-    todaySales: 0,
+    todaysells: 0,
     todayExpenses: 0,
     availableCash: 0,
   });
@@ -48,18 +50,18 @@ const Dashboard = () => {
       const customersSnap = await getDocs(collection(db, "customers"));
       const customersCount = customersSnap.size;
 
-      // Get today's sales total
-      const today = moment().startOf('day').toDate();
-      const tomorrow = moment().add(1, 'day').startOf('day').toDate();
+      // Get today's sells total
+      const today = moment().startOf("day").toDate();
+      const tomorrow = moment().add(1, "day").startOf("day").toDate();
 
       const todayQuery = query(
-        collection(db, "sales"),
+        collection(db, "sells"),
         where("createdAt", ">=", Timestamp.fromDate(today)),
         where("createdAt", "<", Timestamp.fromDate(tomorrow)),
       );
 
-      const todaySalesSnap = await getDocs(todayQuery);
-      const todaySalesTotal = todaySalesSnap.docs.reduce((total, doc) => {
+      const todaysellsSnap = await getDocs(todayQuery);
+      const todaysellsTotal = todaysellsSnap.docs.reduce((total, doc) => {
         return total + (doc.data().totalPrice || 0);
       }, 0);
 
@@ -67,22 +69,22 @@ const Dashboard = () => {
       const expensesQuery = query(
         collection(db, "expenses"),
         where("timestamp", ">=", today),
-        where("timestamp", "<", tomorrow)
+        where("timestamp", "<", tomorrow),
       );
       const expensesSnap = await getDocs(expensesQuery);
       const todayExpensesTotal = expensesSnap.docs.reduce((total, doc) => {
         return total + (doc.data().amount || 0);
       }, 0);
 
-      // Get today's cash sales and expenses for available cash calculation
-      const cashSalesQuery = query(
-        collection(db, "sales"),
+      // Get today's cash sells and expenses for available cash calculation
+      const cashsellsQuery = query(
+        collection(db, "sells"),
         where("createdAt", ">=", Timestamp.fromDate(today)),
         where("createdAt", "<", Timestamp.fromDate(tomorrow)),
-        where("paymentMode", "==", "cash")
+        where("paymentMode", "==", "cash"),
       );
-      const cashSalesSnap = await getDocs(cashSalesQuery);
-      const cashSalesTotal = cashSalesSnap.docs.reduce((total, doc) => {
+      const cashsellsSnap = await getDocs(cashsellsQuery);
+      const cashsellsTotal = cashsellsSnap.docs.reduce((total, doc) => {
         return total + (doc.data().paidAmount || 0);
       }, 0);
 
@@ -90,7 +92,7 @@ const Dashboard = () => {
         collection(db, "expenses"),
         where("timestamp", ">=", today),
         where("timestamp", "<", tomorrow),
-        where("paymentMode", "==", "cash")
+        where("paymentMode", "==", "cash"),
       );
       const cashExpensesSnap = await getDocs(cashExpensesQuery);
       const cashExpensesTotal = cashExpensesSnap.docs.reduce((total, doc) => {
@@ -101,24 +103,25 @@ const Dashboard = () => {
       const cashEntriesQuery = query(
         collection(db, "cashEntries"),
         where("timestamp", ">=", today),
-        where("timestamp", "<", tomorrow)
+        where("timestamp", "<", tomorrow),
       );
       const cashEntriesSnap = await getDocs(cashEntriesQuery);
       const cashCredits = cashEntriesSnap.docs
-        .filter(doc => doc.data().type === "credit")
+        .filter((doc) => doc.data().type === "credit")
         .reduce((total, doc) => total + (doc.data().amount || 0), 0);
       const cashDebits = cashEntriesSnap.docs
-        .filter(doc => doc.data().type === "debit")
+        .filter((doc) => doc.data().type === "debit")
         .reduce((total, doc) => total + (doc.data().amount || 0), 0);
 
-      const availableCash = cashSalesTotal + cashCredits - cashExpensesTotal - cashDebits;
+      const availableCash =
+        cashsellsTotal + cashCredits - cashExpensesTotal - cashDebits;
 
       setStats({
         products: productsCount,
         customers: customersCount,
-        todaySales: todaySalesTotal,
+        todaysells: todaysellsTotal,
         todayExpenses: todayExpensesTotal,
-        availableCash: availableCash
+        availableCash: availableCash,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -129,115 +132,85 @@ const Dashboard = () => {
 
   if (!user) {
     return (
-      <div className="p-6">
-        <div className="alert alert-warning">
+      <Box p={3}>
+        <Alert severity="warning">
           Please log in to access dashboard.
-        </div>
-      </div>
+        </Alert>
+      </Box>
     );
   }
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <span className="loading-text">Loading dashboard...</span>
-        </div>
-      </div>
-    );
+    return <Loading message="Loading dashboard..." />;
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <button
-          onClick={() => navigate("/sales-inventory")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <span>+</span>
-          New Sale
-        </button>
-      </div>
+    <Box p={3}>
+      <PageHeader 
+        title="Dashboard" 
+        actions={[
+          <Button
+            key="new-sell"
+            onClick={() => navigate("/sells?openModal=true")}
+            startIcon={<MdAdd />}
+          >
+            New Sell
+          </Button>
+        ]}
+      />
 
-      <div className="stats-grid">
-        <div
-          className="stat-card hover-lift cursor-pointer"
-          onClick={() => navigate("/products")}
-        >
-          <div className={"flex items-center justify-between"}>
-            <div className="stat-header">
-              <div className="stat-icon">
-                <MdInventory className="text-2xl" />
-              </div>
-            </div>
-            <div className="stat-number">{stats.products}</div>
-          </div>
-          <div className="stat-label">Total Products</div>
-        </div>
-
-        <div
-          className="stat-card hover-lift cursor-pointer"
-          onClick={() => navigate("/customers")}
-        >
-          <div className={"flex items-center justify-between"}>
-            <div className="stat-header">
-              <div className="stat-icon">
-                <MdPeople className="text-2xl" />
-              </div>
-            </div>
-            <div className="stat-number">{stats.customers}</div>
-          </div>
-          <div className="stat-label">Total Customers</div>
-        </div>
-
-        <div
-          className="stat-card hover-lift cursor-pointer"
-          onClick={() => navigate("/sales-history")}
-        >
-          <div className={"flex items-center justify-between"}>
-            <div className="stat-header">
-              <div className="stat-icon">
-                <MdAttachMoney className="text-2xl" />
-              </div>
-            </div>
-            <div className="stat-number">₹{stats.todaySales}</div>
-          </div>
-          <div className="stat-label">Today's Sales</div>
-        </div>
-
-        <div
-          className="stat-card hover-lift cursor-pointer"
-          onClick={() => navigate("/expenses")}
-        >
-          <div className={"flex items-center justify-between"}>
-            <div className="stat-header">
-              <div className="stat-icon">
-                <MdAttachMoney className="text-2xl" style={{color: '#dc2626'}} />
-              </div>
-            </div>
-            <div className="stat-number">₹{stats.todayExpenses}</div>
-          </div>
-          <div className="stat-label">Today's Expenses</div>
-        </div>
-
-        <div
-          className="stat-card hover-lift cursor-pointer"
-          onClick={() => navigate("/cash-management")}
-        >
-          <div className={"flex items-center justify-between"}>
-            <div className="stat-header">
-              <div className="stat-icon">
-                <MdAttachMoney className="text-2xl" style={{color: '#059669'}} />
-              </div>
-            </div>
-            <div className="stat-number">₹{stats.availableCash}</div>
-          </div>
-          <div className="stat-label">Available Cash</div>
-        </div>
-      </div>
-    </div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <StatCard
+            title="Total Products"
+            value={stats.products}
+            icon={<MdInventory size={24} />}
+            color="primary"
+            onClick={() => navigate("/products")}
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <StatCard
+            title="Total Customers"
+            value={stats.customers}
+            icon={<MdPeople size={24} />}
+            color="info"
+            onClick={() => navigate("/customers")}
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <StatCard
+            title="Today's Sales"
+            value={`₹${stats.todaysells}`}
+            icon={<MdAttachMoney size={24} />}
+            color="success"
+            onClick={() => navigate("/sells-history")}
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <StatCard
+            title="Today's Expenses"
+            value={`₹${stats.todayExpenses}`}
+            icon={<MdAttachMoney size={24} />}
+            color="error"
+            onClick={() => navigate("/expenses")}
+          />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+          <StatCard
+            title="Available Cash"
+            value={`₹${stats.availableCash}`}
+            icon={<MdAttachMoney size={24} />}
+            color="warning"
+            onClick={() => navigate("/cash-management")}
+          />
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

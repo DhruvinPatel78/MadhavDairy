@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
+import { FormControlLabel, Switch } from '@mui/material';
+import { Input, Button, Select } from './';
 
 const ProductForm = ({ product, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: "",
     pricePerUnit: "",
     unit: "",
-    quantity: "",
+    isActive: true,
   });
 
   useEffect(() => {
@@ -14,7 +16,7 @@ const ProductForm = ({ product, onSave, onCancel }) => {
         name: product.name || "",
         pricePerUnit: product.pricePerUnit || "",
         unit: product.unit || "",
-        quantity: product.quantity || "",
+        isActive: product.isActive !== false,
       });
     }
   }, [product]);
@@ -24,88 +26,69 @@ const ProductForm = ({ product, onSave, onCancel }) => {
     onSave({
       ...formData,
       pricePerUnit: parseFloat(formData.pricePerUnit),
-      quantity: parseInt(formData.quantity) || 0,
     });
   };
 
+  const unitOptions = [
+    { value: "Liter", label: "Liter" },
+    { value: "Kg", label: "Kg" },
+    { value: "Piece", label: "Piece" },
+    { value: "Packet", label: "Packet" },
+  ];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Product Name
-        </label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-          required
-        />
-      </div>
+      <Input
+        label="Product Name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Price per Unit (₹)
-        </label>
-        <input
-          type="number"
-          step="0.01"
-          value={formData.pricePerUnit}
-          onChange={(e) =>
-            setFormData({ ...formData, pricePerUnit: e.target.value })
-          }
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-          required
-        />
-      </div>
+      <Input
+        label="Price per Unit (₹)"
+        type="number"
+        inputProps={{ step: "0.01" }}
+        value={formData.pricePerUnit}
+        onChange={(e) => setFormData({ ...formData, pricePerUnit: e.target.value })}
+        required
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Unit
-        </label>
-        <select
-          value={formData.unit}
-          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-          required
-        >
-          <option value="">Select Unit</option>
-          <option value="Liter">Liter</option>
-          <option value="Kg">Kg</option>
-          <option value="Piece">Piece</option>
-          <option value="Packet">Packet</option>
-        </select>
-      </div>
+      <Select
+        label="Unit"
+        value={formData.unit}
+        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+        options={unitOptions}
+        required
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Quantity
-        </label>
-        <input
-          type="number"
-          value={formData.quantity}
-          onChange={(e) =>
-            setFormData({ ...formData, quantity: e.target.value })
-          }
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-      </div>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={formData.isActive}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            color="success"
+          />
+        }
+        label="Active Status"
+      />
 
       <div className="flex justify-end space-x-3 pt-4">
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+          variant="outlined"
+          color="inherit"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
-          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          variant="contained"
+          color="primary"
         >
           {product ? "Update" : "Add"} Product
-        </button>
+        </Button>
       </div>
     </form>
   );

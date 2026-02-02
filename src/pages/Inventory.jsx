@@ -1,294 +1,421 @@
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, updateDoc, doc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { MdCheck, MdClose } from "react-icons/md";
+import { useState, useEffect } from "react";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import {
+  Input,
+  Button,
+  DataTable,
+  PageHeader,
+  Select,
+  Modal,
+} from "../Components";
+import moment from "moment";
 
 const Inventory = () => {
-    const [products, setProducts] = useState([]);
-    const [dailyStats, setDailyStats] = useState({});
-    const [monthlyStats, setMonthlyStats] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState(null);
-    const [selectedPeriod, setSelectedPeriod] = useState('today');
-    const [editingStock, setEditingStock] = useState({});
-    const [error, setError] = useState(null);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [reportType, setReportType] = useState("daily");
+  const [selectedDate, setSelectedDate] = useState(
+    moment().format("YYYY-MM-DD"),
+  );
+  const [selectedMonth, setSelectedMonth] = useState(
+    moment().format("YYYY-MM"),
+  );
+  const [showModal, setShowModal] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [dailyData, setDailyData] = useState({});
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            if (currentUser) {
-                loadInventoryData();
-            } else {
-                setLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
+  useEffect(() => {
+    fetchProducts();
+    fetchInventoryData();
+  }, [reportType, selectedDate, selectedMonth]);
 
-    const loadInventoryData = async () => {
-        try {
-            setLoading(true);
-            
-            // Get all products
-            const productsSnap = await getDocs(collection(db, "products"));
-            const productsData = productsSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setProducts(productsData);
+  const fetchProducts = async () => {
+    const snapshot = await getDocs(collection(db, "products"));
+    setProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  };
 
-            // Get sales data for calculations
-            const salesSnap = await getDocs(
-                query(collection(db, "sales"), orderBy("createdAt", "desc"))
-            );
-            const salesData = salesSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate()
-            }));
+  const fetchInventoryData = async () => {
+    let q;
 
-            calculateStats(productsData, salesData);
-        } catch (error) {
-            console.error("Error loading inventory data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const calculateStats = (products, sales) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-
-        // Calculate daily stats
-        const todaySales = sales.filter(sale => 
-            sale.createdAt >= today && sale.createdAt < tomorrow
-        );
-
-        const dailyProductStats = {};
-        products.forEach(product => {
-            const productSales = todaySales.filter(sale => sale.productId === product.id);
-            const totalSold = productSales.reduce((sum, sale) => sum + sale.quantity, 0);
-            
-            dailyProductStats[product.id] = {
-                name: product.name,
-                currentStock: product.quantity || 0,
-                soldToday: totalSold,
-                revenueToday: productSales.reduce((sum, sale) => sum + sale.totalPrice, 0)
-            };
-        });
-
-        // Calculate monthly stats
-        const monthSales = sales.filter(sale => 
-            sale.createdAt >= thisMonth && sale.createdAt < nextMonth
-        );
-
-        const monthlyProductStats = {};
-        products.forEach(product => {
-            const productSales = monthSales.filter(sale => sale.productId === product.id);
-            const totalSold = productSales.reduce((sum, sale) => sum + sale.quantity, 0);
-            
-            monthlyProductStats[product.id] = {
-                name: product.name,
-                currentStock: product.quantity || 0,
-                soldThisMonth: totalSold,
-                revenueThisMonth: productSales.reduce((sum, sale) => sum + sale.totalPrice, 0)
-            };
-        });
-
-        setDailyStats(dailyProductStats);
-        setMonthlyStats(monthlyProductStats);
-    };
-
-    const handleStockUpdate = async (productId, newQuantity) => {
-        try {
-            setError(null);
-            await updateDoc(doc(db, "products", productId), {
-                quantity: Number(newQuantity)
-            });
-            
-            setEditingStock(prev => ({ ...prev, [productId]: false }));
-            loadInventoryData(); // Reload data
-        } catch (err) {
-            console.error("Error updating stock:", err);
-            setError("Failed to update stock. Please try again.");
-        }
-    };
-
-    if (!user) {
-        return (
-            <div className="p-6">
-                <div className="alert alert-warning">
-                    Please log in to access inventory.
-                </div>
-            </div>
-        );
+    if (reportType === "daily") {
+      q = query(
+        collection(db, "dailyInventory"),
+        where("date", "==", selectedDate),
+        orderBy("createdAt", "desc"),
+      );
+    } else if (reportType === "monthly") {
+      const startDate = moment(selectedMonth)
+        .startOf("month")
+        .format("YYYY-MM-DD");
+      const endDate = moment(selectedMonth).endOf("month").format("YYYY-MM-DD");
+      q = query(
+        collection(db, "dailyInventory"),
+        where("date", ">=", startDate),
+        where("date", "<=", endDate),
+        orderBy("date", "desc"),
+      );
+    } else {
+      q = query(collection(db, "dailyInventory"), orderBy("date", "desc"));
     }
 
-    if (loading) {
-        return (
-            <div className="p-6">
-                <div className="loading-container">
-                    <div className="spinner"></div>
-                    <span className="loading-text">Loading inventory...</span>
-                </div>
-            </div>
-        );
+    try {
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      console.log("Fetched inventory data:", data);
+      setInventoryData(data);
+    } catch (error) {
+      console.error("Error fetching inventory data:", error);
+      setInventoryData([]);
     }
+  };
 
-    const currentStats = selectedPeriod === 'today' ? dailyStats : monthlyStats;
-    const soldKey = selectedPeriod === 'today' ? 'soldToday' : 'soldThisMonth';
-    const revenueKey = selectedPeriod === 'today' ? 'revenueToday' : 'revenueThisMonth';
+  const openAddModal = () => {
+    const initialData = {};
+    products.forEach((product) => {
+      initialData[product.id] = {
+        newQty: 0,
+        previousQty: product.quantity || 0,
+        waste: 0,
+        sold: 0,
+      };
+    });
+    setDailyData(initialData);
+    setShowModal(true);
+  };
 
-    return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Inventory Management</h1>
-                <select 
-                    className="border p-2 rounded"
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                >
-                    <option value="today">Today</option>
-                    <option value="month">This Month</option>
-                </select>
-            </div>
+  const handleAddSingleProduct = async (productId, addQty, waste, sold) => {
+    const today = moment().format("YYYY-MM-DD");
+    const product = products.find((p) => p.id === productId);
+    const data = dailyData[productId] || {
+      newQty: 0,
+      previousQty: 0,
+      waste: 0,
+      sold: 0,
+    };
+    const prevQty = Math.max(0, data.previousQty || 0);
+    const totalAvailable = prevQty + addQty;
+    const remainingQty = totalAvailable - sold - waste;
 
-            {error && (
-                <div className="alert alert-error mb-4">
-                    {error}
-                </div>
-            )}
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="stat-card">
-                    <div className="stat-number">
-                        {Object.values(currentStats).reduce((sum, stat) => sum + stat.currentStock, 0)}
-                    </div>
-                    <div className="stat-label">Total Stock</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-number">
-                        {Object.values(currentStats).reduce((sum, stat) => sum + stat[soldKey], 0)}
-                    </div>
-                    <div className="stat-label">
-                        {selectedPeriod === 'today' ? 'Sold Today' : 'Sold This Month'}
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-number">
-                        ₹{Object.values(currentStats).reduce((sum, stat) => sum + stat[revenueKey], 0)}
-                    </div>
-                    <div className="stat-label">
-                        {selectedPeriod === 'today' ? 'Revenue Today' : 'Revenue This Month'}
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-number">
-                        {Object.values(currentStats).filter(stat => stat.currentStock <= 10).length}
-                    </div>
-                    <div className="stat-label">Low Stock Items</div>
-                </div>
-            </div>
-
-            {/* Inventory Table */}
-            <div className="card">
-                <div className="card-header">
-                    <h3 className="text-xl font-semibold">
-                        Product Inventory - {selectedPeriod === 'today' ? 'Daily' : 'Monthly'} View
-                    </h3>
-                </div>
-                <div className="card-body">
-                    <div className="overflow-x-auto">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Current Stock</th>
-                                    <th>
-                                        {selectedPeriod === 'today' ? 'Sold Today' : 'Sold This Month'}
-                                    </th>
-                                    <th>
-                                        {selectedPeriod === 'today' ? 'Revenue Today' : 'Revenue This Month'}
-                                    </th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Object.entries(currentStats).map(([productId, stats]) => (
-                                    <tr key={productId}>
-                                        <td className="font-medium">{stats.name}</td>
-                                        <td>
-                                            {editingStock[productId] ? (
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="number"
-                                                        className="border p-1 w-20"
-                                                        defaultValue={stats.currentStock}
-                                                        onKeyPress={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                handleStockUpdate(productId, e.target.value);
-                                                            }
-                                                        }}
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        onClick={(e) => {
-                                                            const input = e.target.parentElement.querySelector('input');
-                                                            handleStockUpdate(productId, input.value);
-                                                        }}
-                                                        className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                                                    >
-                                                        <MdCheck />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setEditingStock(prev => ({ ...prev, [productId]: false }))}
-                                                        className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
-                                                    >
-                                                        <MdClose />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <span onClick={() => setEditingStock(prev => ({ ...prev, [productId]: true }))} className="cursor-pointer hover:bg-gray-100 p-1 rounded">
-                                                    {stats.currentStock}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td>{stats[soldKey]}</td>
-                                        <td>₹{stats[revenueKey]}</td>
-                                        <td>
-                                            <span className={`badge ${
-                                                stats.currentStock > 10 ? 'badge-success' : 
-                                                stats.currentStock > 0 ? 'badge-warning' : 'badge-error'
-                                            }`}>
-                                                {stats.currentStock > 10 ? 'In Stock' : 
-                                                 stats.currentStock > 0 ? 'Low Stock' : 'Out of Stock'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button
-                                                onClick={() => setEditingStock(prev => ({ ...prev, [productId]: true }))}
-                                                className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                                            >
-                                                Update Stock
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+    // Check if record exists for today
+    const q = query(
+      collection(db, "dailyInventory"),
+      where("productId", "==", productId),
+      where("date", "==", today),
     );
+    const existingSnapshot = await getDocs(q);
+
+    if (!existingSnapshot.empty) {
+      // Update existing record
+      const existingDoc = existingSnapshot.docs[0];
+      await updateDoc(doc(db, "dailyInventory", existingDoc.id), {
+        previousRemaining: prevQty,
+        newAdded: addQty,
+        totalAvailable,
+        sold,
+        waste,
+        remainingQty: Math.max(0, remainingQty),
+        updatedAt: new Date(),
+      });
+    } else {
+      // Create new record
+      await addDoc(collection(db, "dailyInventory"), {
+        productId: product.id,
+        productName: product.name,
+        date: today,
+        previousRemaining: prevQty,
+        newAdded: addQty,
+        totalAvailable,
+        sold,
+        waste,
+        remainingQty: Math.max(0, remainingQty),
+        createdAt: new Date(),
+      });
+    }
+
+    // Update product quantity
+    await updateDoc(doc(db, "products", productId), {
+      quantity: (product.quantity || 0) + addQty,
+    });
+
+    // Reset the form for this product
+    setDailyData((prev) => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        newQty: 0,
+        waste: 0,
+        sold: 0,
+      },
+    }));
+
+    fetchInventoryData();
+  };
+
+  const handleAddDaily = async () => {
+    const today = moment().format("YYYY-MM-DD");
+
+    for (const product of products) {
+      const data = dailyData[product.id] || { newQty: 0, previousQty: 0 };
+      const addQty = Math.max(0, data.newQty || 0);
+      const prevQty = Math.max(0, data.previousQty || 0);
+      const totalAvailable = prevQty + addQty;
+
+      // Update product quantity
+      await updateDoc(doc(db, "products", product.id), {
+        quantity: (product.quantity || 0) + addQty,
+      });
+
+      await addDoc(collection(db, "dailyInventory"), {
+        productId: product.id,
+        productName: product.name,
+        date: today,
+        previousRemaining: prevQty,
+        newAdded: addQty,
+        totalAvailable,
+        sold: 0,
+        waste: 0,
+        remainingQty: totalAvailable,
+        createdAt: new Date(),
+      });
+    }
+
+    setShowModal(false);
+    fetchInventoryData();
+  };
+  const getColumns = () => {
+    const baseColumns = [
+      { header: "Product" },
+      { header: "Date" },
+      { header: "Previous" },
+      { header: "Added" },
+      { header: "Available" },
+      { header: "Sold" },
+      { header: "Waste" },
+      { header: "Remaining" },
+    ];
+
+    if (reportType === "daily") {
+      return baseColumns.filter((col) => col.header !== "Date");
+    }
+    return baseColumns;
+  };
+
+  const renderRow = (item) => (
+    <tr key={item.id}>
+      <td className="px-4 py-2 font-medium">{item.productName}</td>
+      {reportType !== "daily" && (
+        <td className="px-4 py-2">{moment(item.date).format("DD/MM/YYYY")}</td>
+      )}
+      <td className="px-4 py-2">{item.previousRemaining || 0}</td>
+      <td className="px-4 py-2">{item.newAdded || 0}</td>
+      <td className="px-4 py-2">{item.totalAvailable || 0}</td>
+      <td className="px-4 py-2">{item.sold || 0}</td>
+      <td className="px-4 py-2">{item.waste || 0}</td>
+      <td className="px-4 py-2">{item.remainingQty || 0}</td>
+    </tr>
+  );
+
+  const getTitle = () => {
+    if (reportType === "daily") {
+      return `Daily Inventory - ${moment(selectedDate).format("DD/MM/YYYY")}`;
+    } else if (reportType === "monthly") {
+      return `Monthly Inventory - ${moment(selectedMonth).format("MMMM YYYY")}`;
+    }
+    return "All Inventory Records";
+  };
+
+  return (
+    <div className="p-6">
+      <PageHeader
+        title="Inventory Reports"
+        actions={[
+          <Button key="add-daily" onClick={openAddModal}>
+            Add Daily Inventory
+          </Button>,
+        ]}
+      />
+
+      <div className="mb-6 flex gap-4">
+        <Select
+          label="Report Type"
+          value={reportType}
+          onChange={(e) => setReportType(e.target.value)}
+          options={[
+            { value: "daily", label: "Daily" },
+            { value: "monthly", label: "Monthly" },
+            { value: "all", label: "All Records" },
+          ]}
+          mainClassName="w-48"
+        />
+
+        {reportType === "daily" && (
+          <Input
+            type="date"
+            label="Select Date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            mainClassName="w-48"
+          />
+        )}
+
+        {reportType === "monthly" && (
+          <Input
+            type="month"
+            label="Select Month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            mainClassName="w-48"
+          />
+        )}
+      </div>
+
+      <DataTable
+        title={getTitle()}
+        columns={getColumns()}
+        data={inventoryData}
+        renderRow={renderRow}
+        emptyMessage="No inventory data found"
+      />
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Add Daily Inventory"
+        actions={[
+          <Button key="cancel" onClick={() => setShowModal(false)}>
+            Cancel
+          </Button>,
+          <Button key="add" onClick={handleAddDaily}>
+            Add Inventory
+          </Button>,
+        ]}
+      >
+        <div className="w-full flex flex-col justify-center items-center gap-4">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="bg-[#8fa5d81f] w-full flex flex-col justify-center p-4 rounded"
+            >
+              <div className={"flex justify-between items-center"}>
+                <h2 className="font-medium">{product.name}</h2>
+                <Button
+                  onClick={() => {
+                    const data = dailyData[product.id] || {
+                      newQty: 0,
+                      previousQty: 0,
+                      waste: 0,
+                      sold: 0,
+                    };
+                    const addQty = Math.max(0, data.newQty || 0);
+                    const waste = Math.max(0, data.waste || 0);
+                    const sold = Math.max(0, data.sold || 0);
+                    handleAddSingleProduct(product.id, addQty, waste, sold);
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              <div className={"w-full grid grid-cols-5 gap-4 items-center"}>
+                <Input
+                  type="number"
+                  label="Previous Quantity"
+                  value={dailyData[product.id]?.previousQty || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    setDailyData((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        previousQty: value,
+                      },
+                    }));
+                  }}
+                  inputProps={{ min: 0 }}
+                />
+                <Input
+                  type="number"
+                  label="Add Quantity"
+                  value={dailyData[product.id]?.newQty || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    setDailyData((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        newQty: value,
+                      },
+                    }));
+                  }}
+                  inputProps={{ min: 0 }}
+                />
+                <Input
+                  type="number"
+                  label="Waste Quantity"
+                  value={dailyData[product.id]?.waste || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    setDailyData((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        waste: value,
+                      },
+                    }));
+                  }}
+                  inputProps={{ min: 0 }}
+                />
+                <Input
+                  type="number"
+                  label="Sold Quantity"
+                  value={dailyData[product.id]?.sold || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    setDailyData((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        sold: value,
+                      },
+                    }));
+                  }}
+                  inputProps={{ min: 0 }}
+                />
+                <Input
+                  type="number"
+                  label="Available"
+                  value={(() => {
+                    const data = dailyData[product.id] || {
+                      newQty: 0,
+                      previousQty: 0,
+                      waste: 0,
+                      sold: 0,
+                    };
+                    return Math.max(
+                      0,
+                      (data.previousQty || 0) +
+                        (data.newQty || 0) -
+                        (data.waste || 0) -
+                        (data.sold || 0),
+                    );
+                  })()}
+                  disabled
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+    </div>
+  );
 };
 
 export default Inventory;

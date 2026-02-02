@@ -1,15 +1,12 @@
 import { TextField } from '@mui/material';
 
-const Input = ({
+const DateInput = ({
   label,
-  type = "text",
   value,
   onChange,
-  placeholder,
   required = false,
   className = "",
   mainClassName = "",
-  disable = false,
   ...props
 }) => {
   return (
@@ -20,33 +17,18 @@ const Input = ({
         </label>
       )}
       <TextField
-        type={type}
+        type="date"
         value={value}
         onChange={onChange}
-        placeholder={placeholder}
         required={required}
-        disabled={disable}
         fullWidth
         variant="outlined"
         size="small"
         className={className}
-        sx={{
-          '& input[type=number]': {
-            '-moz-appearance': 'textfield',
-          },
-          '& input[type=number]::-webkit-outer-spin-button': {
-            '-webkit-appearance': 'none',
-            margin: 0,
-          },
-          '& input[type=number]::-webkit-inner-spin-button': {
-            '-webkit-appearance': 'none',
-            margin: 0,
-          },
-        }}
         {...props}
       />
     </div>
   );
 };
 
-export default Input;
+export default DateInput;

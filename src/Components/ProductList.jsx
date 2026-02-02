@@ -1,5 +1,6 @@
 import DataTable from "./DataTable";
-import { MdVisibility, MdEdit, MdDelete } from "react-icons/md";
+import { IconButton, Chip } from '@mui/material';
+import { Visibility, Edit, Delete } from '@mui/icons-material';
 
 const ProductList = ({ products, onEdit, onDelete, onView }) => {
   const columns = [
@@ -7,6 +8,7 @@ const ProductList = ({ products, onEdit, onDelete, onView }) => {
     { header: "Price" },
     { header: "Unit" },
     { header: "Available Qty" },
+    { header: "Status" },
     { header: "Visibility" },
     { header: "Action" }
   ];
@@ -31,6 +33,13 @@ const ProductList = ({ products, onEdit, onDelete, onView }) => {
         <div className="text-sm text-gray-900">{product.quantity || 0}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          product.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {product.isActive !== false ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
         <span
           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
             (product.quantity || 0) > 10
@@ -48,27 +57,30 @@ const ProductList = ({ products, onEdit, onDelete, onView }) => {
         </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-        <button
+        <IconButton
           onClick={() => onView(product)}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          color="default"
+          size="small"
           title="View"
         >
-          <MdVisibility className="w-4 h-4" />
-        </button>
-        <button
+          <Visibility fontSize="small" />
+        </IconButton>
+        <IconButton
           onClick={() => onEdit(product)}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          color="primary"
+          size="small"
           title="Edit"
         >
-          <MdEdit className="w-4 h-4" />
-        </button>
-        <button
+          <Edit fontSize="small" />
+        </IconButton>
+        <IconButton
           onClick={() => onDelete(product.id)}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          color="error"
+          size="small"
           title="Delete"
         >
-          <MdDelete className="w-4 h-4" />
-        </button>
+          <Delete fontSize="small" />
+        </IconButton>
       </td>
     </tr>
   );

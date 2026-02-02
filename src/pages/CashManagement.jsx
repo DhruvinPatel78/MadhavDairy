@@ -12,9 +12,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
-import DataTable from "../Components/DataTable";
-import Modal from "../Components/Modal";
-import Input from "../Components/Input";
+import { DataTable, Modal, Input, DateInput, Select } from "../Components";
 import moment from "moment";
 import {
   FiDollarSign,
@@ -29,7 +27,7 @@ import {
 const CashManagement = () => {
   const [user, setUser] = useState(null);
   const [cashEntries, setCashEntries] = useState([]);
-  const [sales, setSales] = useState([]);
+  const [sells, setsells] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,12 +42,12 @@ const CashManagement = () => {
     type: "credit",
     amount: "",
     description: "",
-    date: moment().format('YYYY-MM-DD'),
+    date: moment().format("YYYY-MM-DD"),
   });
 
   const [cashSummary, setCashSummary] = useState({
     startingCash: 0,
-    totalSales: 0,
+    totalsells: 0,
     totalExpenses: 0,
     totalCredits: 0,
     totalDebits: 0,
@@ -137,24 +135,24 @@ const CashManagement = () => {
         // If no cash entries exist, continue with empty array
       }
 
-      // Fetch sales (cash payments only)
-      let salesData = [];
+      // Fetch sells (cash payments only)
+      let sellsData = [];
       try {
-        const salesQuery = query(
-          collection(db, "sales"),
+        const sellsQuery = query(
+          collection(db, "sells"),
           where("createdAt", ">=", startDate),
           where("createdAt", "<", endDate),
           where("paymentMode", "==", "cash"),
           orderBy("createdAt", "desc"),
         );
-        const salesSnapshot = await getDocs(salesQuery);
-        salesData = salesSnapshot.docs.map((doc) => ({
+        const sellsSnapshot = await getDocs(sellsQuery);
+        sellsData = sellsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           timestamp: doc.data().createdAt?.toDate(),
         }));
       } catch (err) {
-        console.log("No cash sales found or error:", err);
+        console.log("No cash sells found or error:", err);
       }
 
       // Fetch expenses (cash payments only)
@@ -178,12 +176,12 @@ const CashManagement = () => {
       }
 
       setCashEntries(cashData);
-      setSales(salesData);
+      setsells(sellsData);
       setExpenses(expensesData);
 
       // Calculate cash summary
-      const totalSales = salesData.reduce(
-        (sum, sale) => sum + (sale.paidAmount || 0),
+      const totalsells = sellsData.reduce(
+        (sum, sell) => sum + (sell.paidAmount || 0),
         0,
       );
       const totalExpenses = expensesData.reduce(
@@ -203,7 +201,7 @@ const CashManagement = () => {
 
       setCashSummary({
         startingCash,
-        totalSales,
+        totalsells,
         totalExpenses,
         totalCredits,
         totalDebits,
@@ -219,10 +217,10 @@ const CashManagement = () => {
 
   const getStartingCash = async (date) => {
     try {
-      const dateStr = moment(date).format('YYYY-MM-DD');
+      const dateStr = moment(date).format("YYYY-MM-DD");
       const q = query(
         collection(db, "startingCash"),
-        where("date", "==", dateStr)
+        where("date", "==", dateStr),
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
@@ -238,8 +236,8 @@ const CashManagement = () => {
     e.preventDefault();
     try {
       const amount = parseFloat(startingCashAmount);
-      const dateStr = moment().format('YYYY-MM-DD');
-      
+      const dateStr = moment().format("YYYY-MM-DD");
+
       await addDoc(collection(db, "startingCash"), {
         date: dateStr,
         amount,
@@ -279,7 +277,7 @@ const CashManagement = () => {
         type: "credit",
         amount: "",
         description: "",
-        date: moment().format('YYYY-MM-DD'),
+        date: moment().format("YYYY-MM-DD"),
       });
       fetchAllData();
     } catch (err) {
@@ -294,7 +292,9 @@ const CashManagement = () => {
       type: entry.type,
       amount: entry.amount.toString(),
       description: entry.description || "",
-      date: entry.timestamp ? moment(entry.timestamp).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+      date: entry.timestamp
+        ? moment(entry.timestamp).format("YYYY-MM-DD")
+        : moment().format("YYYY-MM-DD"),
     });
     setShowModal(true);
   };
@@ -318,12 +318,12 @@ const CashManagement = () => {
       source: "manual",
       movementType: entry.type,
     })),
-    ...sales.map((sale) => ({
-      id: sale.id,
-      timestamp: sale.timestamp,
-      amount: sale.paidAmount,
-      description: `Sale to ${sale.customerName}`,
-      source: "sale",
+    ...sells.map((sell) => ({
+      id: sell.id,
+      timestamp: sell.timestamp,
+      amount: sell.paidAmount,
+      description: `sell to ${sell.customerName}`,
+      source: "sell",
       movementType: "credit",
     })),
     ...expenses.map((expense) => ({
@@ -340,7 +340,10 @@ const CashManagement = () => {
     {
       key: "timestamp",
       label: "Date & Time",
-      render: (item) => item.timestamp ? moment(item.timestamp).format('DD/MM/YYYY HH:mm') : "N/A",
+      render: (item) =>
+        item.timestamp
+          ? moment(item.timestamp).format("DD/MM/YYYY HH:mm")
+          : "N/A",
     },
     {
       key: "movementType",
@@ -379,7 +382,7 @@ const CashManagement = () => {
     {
       key: "description",
       label: "Description",
-      render: (item) => item.description || "-"
+      render: (item) => item.description || "-",
     },
     {
       key: "source",
@@ -389,7 +392,7 @@ const CashManagement = () => {
           className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
             item.source === "manual"
               ? "bg-blue-100 text-blue-800"
-              : item.source === "sale"
+              : item.source === "sell"
                 ? "bg-green-100 text-green-800"
                 : "bg-red-100 text-red-800"
           }`}
@@ -449,15 +452,15 @@ const CashManagement = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowStartingCashModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+              className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm"
             >
-              <FiDollarSign /> Set Starting Cash
+              <FiDollarSign className="text-lg" /> Set Starting Cash
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm"
             >
-              <FiPlus /> Add Cash Entry
+              <FiPlus className="text-lg" /> Add Cash Entry
             </button>
           </div>
         </div>
@@ -479,9 +482,9 @@ const CashManagement = () => {
             </p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600 font-medium">Sales (Cash)</p>
+            <p className="text-sm text-green-600 font-medium">sells (Cash)</p>
             <p className="text-xl font-bold text-green-800">
-              ₹{cashSummary.totalSales.toFixed(2)}
+              ₹{cashSummary.totalsells.toFixed(2)}
             </p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -514,30 +517,24 @@ const CashManagement = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Filter
-              </label>
-              <select
+              <Select
+                label="Date Filter"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="today">Today</option>
-                <option value="monthly">This Month</option>
-                <option value="custom">Custom Date</option>
-              </select>
+                options={[
+                  { label: "Today", value: "today" },
+                  { label: "This Month", value: "monthly" },
+                  { label: "Custom Date", value: "custom" },
+                ]}
+              />
             </div>
 
             {dateFilter === "custom" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Date
-                </label>
-                <input
-                  type="date"
+                <DateInput
+                  label="Select Date"
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -545,9 +542,9 @@ const CashManagement = () => {
             <div className="flex items-end">
               <button
                 onClick={fetchAllData}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
-                <FiCalendar className="inline mr-2" />
+                <FiCalendar className="text-lg" />
                 Refresh
               </button>
             </div>
@@ -564,7 +561,10 @@ const CashManagement = () => {
             renderRow={(item, index) => (
               <tr key={item.id || index} className="hover:bg-gray-50">
                 {columns.map((column, colIndex) => (
-                  <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td
+                    key={colIndex}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                  >
                     {column.render ? column.render(item) : item[column.key]}
                   </td>
                 ))}
@@ -593,19 +593,20 @@ const CashManagement = () => {
               required
             />
             <p className="text-sm text-gray-600">
-              This will set the starting cash for today ({moment().format('DD/MM/YYYY')})
+              This will set the starting cash for today (
+              {moment().format("DD/MM/YYYY")})
             </p>
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => setShowStartingCashModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                className="flex-1 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 Set Starting Cash
               </button>
@@ -623,27 +624,25 @@ const CashManagement = () => {
               type: "credit",
               amount: "",
               description: "",
-              date: moment().format('YYYY-MM-DD'),
+              date: moment().format("YYYY-MM-DD"),
             });
           }}
           title={editingEntry ? "Edit Cash Entry" : "Add Cash Entry"}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type
-              </label>
-              <select
+              <Select
+                label="Type"
                 value={cashForm.type}
                 onChange={(e) =>
                   setCashForm({ ...cashForm, type: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                options={[
+                  { label: "Credit (Money In)", value: "credit" },
+                  { label: "Debit (Money Out)", value: "debit" },
+                ]}
                 required
-              >
-                <option value="credit">Credit (Money In)</option>
-                <option value="debit">Debit (Money Out)</option>
-              </select>
+              />
             </div>
 
             <Input
@@ -657,9 +656,8 @@ const CashManagement = () => {
               required
             />
 
-            <Input
+            <DateInput
               label="Date"
-              type="date"
               value={cashForm.date}
               onChange={(e) =>
                 setCashForm({ ...cashForm, date: e.target.value })
@@ -676,7 +674,7 @@ const CashManagement = () => {
                 onChange={(e) =>
                   setCashForm({ ...cashForm, description: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 rows="3"
                 placeholder="Description of cash entry..."
                 required
@@ -690,13 +688,13 @@ const CashManagement = () => {
                   setShowModal(false);
                   setEditingEntry(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="flex-1 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
               >
                 {editingEntry ? "Update" : "Add"} Entry
               </button>

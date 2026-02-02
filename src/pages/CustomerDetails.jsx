@@ -23,7 +23,7 @@ const CustomerDetails = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [customer, setCustomer] = useState(null);
-  const [sales, setSales] = useState([]);
+  const [sells, setsells] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -69,14 +69,14 @@ const CustomerDetails = () => {
       const customerData = { id: customerDoc.id, ...customerDoc.data() };
       setCustomer(customerData);
 
-      // Fetch all customer sales first, then filter by date
-      const salesQuery = query(
-        collection(db, "sales"),
+      // Fetch all customer sells first, then filter by date
+      const sellsQuery = query(
+        collection(db, "sells"),
         where("customerId", "==", customerId),
       );
 
-      const salesSnapshot = await getDocs(salesQuery);
-      let salesData = salesSnapshot.docs.map((doc) => ({
+      const sellsSnapshot = await getDocs(sellsQuery);
+      let sellsData = sellsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
@@ -105,7 +105,7 @@ const CustomerDetails = () => {
           break;
         case "custom":
           if (!customDate) {
-            setSales([]);
+            setsells([]);
             setLoading(false);
             return;
           }
@@ -126,15 +126,15 @@ const CustomerDetails = () => {
           endDate = new Date();
       }
 
-      // Filter sales by date range and sort by date (newest first)
-      salesData = salesData
-        .filter((sale) => {
-          if (!sale.createdAt) return false;
-          return sale.createdAt >= startDate && sale.createdAt < endDate;
+      // Filter sells by date range and sort by date (newest first)
+      sellsData = sellsData
+        .filter((sell) => {
+          if (!sell.createdAt) return false;
+          return sell.createdAt >= startDate && sell.createdAt < endDate;
         })
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      setSales(salesData);
+      setsells(sellsData);
     } catch (err) {
       setError("Failed to fetch customer data: " + err.message);
       console.error("Error fetching customer data:", err);
@@ -157,7 +157,7 @@ const CustomerDetails = () => {
     }
   };
 
-  const salesColumns = [
+  const sellsColumns = [
     { key: "createdAt", header: "Date" },
     { key: "items", header: "Products" },
     { key: "totalAmount", header: "Total Amount" },
@@ -167,16 +167,16 @@ const CustomerDetails = () => {
     { key: "paymentMode", header: "Payment Mode" },
   ];
 
-  const renderSalesRows = (sale, index) => (
-    <tr key={sale.id || index} className="hover:bg-gray-50">
+  const rendersellsRows = (sell, index) => (
+    <tr key={sell.id || index} className="hover:bg-gray-50">
       <td className="px-6 py-4 text-sm text-gray-900">
-        {sale.createdAt
-          ? moment(sale.createdAt).format("DD/MM/YYYY HH:mm")
+        {sell.createdAt
+          ? moment(sell.createdAt).format("DD/MM/YYYY HH:mm")
           : "N/A"}
       </td>
       <td className="px-6 py-4 text-sm text-gray-900">
-        {sale.items?.length
-          ? sale.items.map((item, index) => (
+        {sell.items?.length
+          ? sell.items.map((item, index) => (
               <span key={index}>
                 {item.productName} ({item.quantity} {item.unit})
                 <br />
@@ -185,31 +185,31 @@ const CustomerDetails = () => {
           : "N/A"}
       </td>
       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-        ₹{sale.totalAmount?.toFixed(2) || 0}
+        ₹{sell.totalAmount?.toFixed(2) || 0}
       </td>
       <td className="px-6 py-4 text-sm text-green-600 font-semibold">
-        ₹{sale.paidAmount?.toFixed(2) || 0}
+        ₹{sell.paidAmount?.toFixed(2) || 0}
       </td>
       <td className="px-6 py-4 text-sm text-red-600 font-semibold">
-        ₹{sale.remainingAmount?.toFixed(2) || 0}
+        ₹{sell.remainingAmount?.toFixed(2) || 0}
       </td>
       <td className="px-6 py-4">
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            sale.paymentStatus === "paid"
+            sell.paymentStatus === "paid"
               ? "bg-green-100 text-green-800"
-              : sale.paymentStatus === "partial"
+              : sell.paymentStatus === "partial"
                 ? "bg-yellow-100 text-yellow-800"
-                : sale.paymentStatus === "overpaid"
+                : sell.paymentStatus === "overpaid"
                   ? "bg-blue-100 text-blue-800"
                   : "bg-red-100 text-red-800"
           }`}
         >
-          {sale.paymentStatus || "pending"}
+          {sell.paymentStatus || "pending"}
         </span>
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 capitalize">
-        {sale.paymentMode}
+        {sell.paymentMode}
       </td>
     </tr>
   );
@@ -242,7 +242,7 @@ const CustomerDetails = () => {
           <p className="text-red-600 mb-4">{error || "Customer not found"}</p>
           <button
             onClick={() => navigate("/customers")}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             Back to Customers
           </button>
@@ -259,7 +259,7 @@ const CustomerDetails = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/customers")}
-              className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition-colors shadow-sm"
             >
               <FiArrowLeft className="text-xl" />
             </button>
@@ -272,9 +272,9 @@ const CustomerDetails = () => {
           </div>
           <button
             onClick={() => setShowEditModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
-            <FiEdit /> Edit Customer
+            <FiEdit className="text-lg" /> Edit Customer
           </button>
         </div>
       </div>
@@ -308,7 +308,9 @@ const CustomerDetails = () => {
               <label className="block text-sm font-medium text-gray-500 mb-1">
                 Payment Status
               </label>
-              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${formatTotalDue(customer.totalDue).className}`}>
+              <span
+                className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${formatTotalDue(customer.totalDue).className}`}
+              >
                 {formatTotalDue(customer.totalDue).status}
               </span>
             </div>
@@ -316,7 +318,9 @@ const CustomerDetails = () => {
               <label className="block text-sm font-medium text-gray-500 mb-1">
                 Outstanding Amount
               </label>
-              <p className={`text-lg font-semibold ${formatTotalDue(customer.totalDue).amountClassName}`}>
+              <p
+                className={`text-lg font-semibold ${formatTotalDue(customer.totalDue).amountClassName}`}
+              >
                 {formatTotalDue(customer.totalDue).amount}
               </p>
             </div>
@@ -371,7 +375,7 @@ const CustomerDetails = () => {
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
                 >
                   <option value="today">Today</option>
                   <option value="monthly">This Month</option>
@@ -383,7 +387,7 @@ const CustomerDetails = () => {
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
                 )}
               </div>
@@ -391,9 +395,9 @@ const CustomerDetails = () => {
           </div>
 
           <DataTable
-            data={sales}
-            columns={salesColumns}
-            renderRow={renderSalesRows}
+            data={sells}
+            columns={sellsColumns}
+            renderRow={rendersellsRows}
             emptyMessage="No purchases found for the selected period"
           />
         </div>

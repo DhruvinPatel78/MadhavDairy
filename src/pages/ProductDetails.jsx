@@ -23,7 +23,7 @@ const ProductDetails = () => {
   const [user, setUser] = useState(null);
   const [product, setProduct] = useState(null);
   const [stockUpdates, setStockUpdates] = useState([]);
-  const [sales, setSales] = useState([]);
+  const [sells, setsells] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -79,20 +79,21 @@ const ProductDetails = () => {
       let stockData = stockSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || doc.data().timestamp?.toDate(),
+        createdAt:
+          doc.data().createdAt?.toDate() || doc.data().timestamp?.toDate(),
       }));
 
-      // Fetch sales containing this product
-      const salesQuery = query(collection(db, "sales"));
-      const salesSnapshot = await getDocs(salesQuery);
-      let salesData = salesSnapshot.docs
+      // Fetch sells containing this product
+      const sellsQuery = query(collection(db, "sells"));
+      const sellsSnapshot = await getDocs(sellsQuery);
+      let sellsData = sellsSnapshot.docs
         .map((doc) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate(),
         }))
-        .filter((sale) => 
-          sale.items?.some((item) => item.productId === productId)
+        .filter((sell) =>
+          sell.items?.some((item) => item.productId === productId),
         );
 
       // Filter by date on client side
@@ -119,7 +120,7 @@ const ProductDetails = () => {
         case "custom":
           if (!customDate) {
             setStockUpdates([]);
-            setSales([]);
+            setsells([]);
             setLoading(false);
             return;
           }
@@ -148,15 +149,15 @@ const ProductDetails = () => {
         })
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      salesData = salesData
-        .filter((sale) => {
-          if (!sale.createdAt) return false;
-          return sale.createdAt >= startDate && sale.createdAt < endDate;
+      sellsData = sellsData
+        .filter((sell) => {
+          if (!sell.createdAt) return false;
+          return sell.createdAt >= startDate && sell.createdAt < endDate;
         })
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setStockUpdates(stockData);
-      setSales(salesData);
+      setsells(sellsData);
     } catch (err) {
       setError("Failed to fetch product data: " + err.message);
       console.error("Error fetching product data:", err);
@@ -180,8 +181,10 @@ const ProductDetails = () => {
   };
 
   const getStockStatus = (quantity) => {
-    if (quantity > 10) return { text: "In Stock", color: "bg-green-100 text-green-800" };
-    if (quantity > 0) return { text: "Low Stock", color: "bg-yellow-100 text-yellow-800" };
+    if (quantity > 10)
+      return { text: "In Stock", color: "bg-green-100 text-green-800" };
+    if (quantity > 0)
+      return { text: "Low Stock", color: "bg-yellow-100 text-yellow-800" };
     return { text: "Out of Stock", color: "bg-red-100 text-red-800" };
   };
 
@@ -213,7 +216,8 @@ const ProductDetails = () => {
         </span>
       </td>
       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-        {update.type === "add" ? "+" : "-"}{update.quantity || 0}
+        {update.type === "add" ? "+" : "-"}
+        {update.quantity || 0}
       </td>
       <td className="px-6 py-4 text-sm text-gray-900">
         {update.oldQuantity || 0}
@@ -227,27 +231,29 @@ const ProductDetails = () => {
     </tr>
   );
 
-  const salesColumns = [
+  const sellsColumns = [
     { key: "createdAt", header: "Date" },
     { key: "customerName", header: "Customer" },
     { key: "quantity", header: "Quantity Sold" },
-    { key: "totalAmount", header: "Sale Amount" },
+    { key: "totalAmount", header: "sell Amount" },
     { key: "paymentStatus", header: "Status" },
   ];
 
-  const renderSalesRows = (sale, index) => {
-    const productItem = sale.items?.find(item => item.productId === productId);
+  const rendersellsRows = (sell, index) => {
+    const productItem = sell.items?.find(
+      (item) => item.productId === productId,
+    );
     if (!productItem) return null;
 
     return (
-      <tr key={sale.id || index} className="hover:bg-gray-50">
+      <tr key={sell.id || index} className="hover:bg-gray-50">
         <td className="px-6 py-4 text-sm text-gray-900">
-          {sale.createdAt
-            ? moment(sale.createdAt).format("DD/MM/YYYY HH:mm")
+          {sell.createdAt
+            ? moment(sell.createdAt).format("DD/MM/YYYY HH:mm")
             : "N/A"}
         </td>
         <td className="px-6 py-4 text-sm text-gray-900">
-          {sale.customerName || "N/A"}
+          {sell.customerName || "N/A"}
         </td>
         <td className="px-6 py-4 text-sm font-semibold text-gray-900">
           {productItem.quantity} {productItem.unit}
@@ -258,16 +264,16 @@ const ProductDetails = () => {
         <td className="px-6 py-4">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
-              sale.paymentStatus === "paid"
+              sell.paymentStatus === "paid"
                 ? "bg-green-100 text-green-800"
-                : sale.paymentStatus === "partial"
+                : sell.paymentStatus === "partial"
                   ? "bg-yellow-100 text-yellow-800"
-                  : sale.paymentStatus === "overpaid"
+                  : sell.paymentStatus === "overpaid"
                     ? "bg-blue-100 text-blue-800"
                     : "bg-red-100 text-red-800"
             }`}
           >
-            {sale.paymentStatus || "pending"}
+            {sell.paymentStatus || "pending"}
           </span>
         </td>
       </tr>
@@ -302,7 +308,7 @@ const ProductDetails = () => {
           <p className="text-red-600 mb-4">{error || "Product not found"}</p>
           <button
             onClick={() => navigate("/products")}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
           >
             Back to Products
           </button>
@@ -321,7 +327,7 @@ const ProductDetails = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/products")}
-              className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition-colors shadow-sm"
             >
               <FiArrowLeft className="text-xl" />
             </button>
@@ -333,9 +339,9 @@ const ProductDetails = () => {
           </div>
           <button
             onClick={() => setShowEditModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
-            <FiEdit /> Edit Product
+            <FiEdit className="text-lg" /> Edit Product
           </button>
         </div>
       </div>
@@ -388,7 +394,9 @@ const ProductDetails = () => {
               <label className="block text-sm font-medium text-gray-500 mb-1">
                 Stock Status
               </label>
-              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${status.color}`}>
+              <span
+                className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${status.color}`}
+              >
                 {status.text}
               </span>
             </div>
@@ -440,7 +448,7 @@ const ProductDetails = () => {
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
                 >
                   <option value="today">Today</option>
                   <option value="monthly">This Month</option>
@@ -452,7 +460,7 @@ const ProductDetails = () => {
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
                 )}
               </div>
@@ -467,22 +475,22 @@ const ProductDetails = () => {
           />
         </div>
 
-        {/* Sales History */}
+        {/* sells History */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <FiTrendingUp className="text-xl text-orange-600" />
               <h2 className="text-lg font-semibold text-gray-900">
-                Sales History
+                sells History
               </h2>
             </div>
           </div>
 
           <DataTable
-            data={sales}
-            columns={salesColumns}
-            renderRow={renderSalesRows}
-            emptyMessage="No sales found for the selected period"
+            data={sells}
+            columns={sellsColumns}
+            renderRow={rendersellsRows}
+            emptyMessage="No sells found for the selected period"
           />
         </div>
       </div>

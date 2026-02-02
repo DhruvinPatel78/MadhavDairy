@@ -5,13 +5,12 @@ import {
   MdDashboard,
   MdInventory,
   MdPeople,
-  MdPointOfSale,
-  MdHistory,
   MdWarehouse,
   MdLogout,
   MdStore,
   MdAttachMoney,
   MdAccountBalance,
+  MdSupervisorAccount,
 } from "react-icons/md";
 
 const Sidebar = () => {
@@ -48,17 +47,13 @@ const Sidebar = () => {
           <MdPeople className="text-lg" />
           Customers
         </NavLink>
-        <NavLink to="/sales-inventory" className={linkClass}>
+        <NavLink to="/sells" className={linkClass}>
           <MdStore className="text-lg" />
-          Sales & Inventory
+          Sells
         </NavLink>
-        <NavLink to="/sales-history" className={linkClass}>
-          <MdHistory className="text-lg" />
-          Sales History
-        </NavLink>
-        <NavLink to="/inventory-history" className={linkClass}>
+        <NavLink to="/inventory" className={linkClass}>
           <MdWarehouse className="text-lg" />
-          Inventory History
+          Inventory
         </NavLink>
         <NavLink to="/expenses" className={linkClass}>
           <MdAttachMoney className="text-lg" />
@@ -68,6 +63,10 @@ const Sidebar = () => {
           <MdAccountBalance className="text-lg" />
           Cash Management
         </NavLink>
+        <NavLink to="/users" className={linkClass}>
+          <MdSupervisorAccount className="text-lg" />
+          Users
+        </NavLink>
       </nav>
 
       {/* Logout */}
@@ -75,7 +74,7 @@ const Sidebar = () => {
         <button
           onClick={() => {
             signOut(auth);
-            localStorage.removeItem('madhavDairyUser');
+            localStorage.removeItem("madhavDairyUser");
           }}
           className="flex items-center gap-3 rounded-2xl w-full p-4 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer"
         >

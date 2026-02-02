@@ -42,7 +42,7 @@ const Login = () => {
                     <input
                         type="email"
                         placeholder="Enter your email"
-                        className="w-full border p-2 rounded"
+                        className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
@@ -52,12 +52,12 @@ const Login = () => {
                     <input
                         type="password"
                         placeholder="Enter your password"
-                        className="w-full border p-2 rounded"
+                        className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         onChange={(e) => setPassword(e.target.value)}
                     />
                 </div>
 
-                <button className="bg-blue-600 hover:bg-blue-700 text-white w-full p-2 rounded transition-colors">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white w-full py-2.5 rounded-lg font-medium transition-colors shadow-sm">
                     Login
                 </button>
             </form>
