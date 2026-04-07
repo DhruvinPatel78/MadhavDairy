@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { formatTotalDue } from "../utils/formatters";
-import { FormControlLabel, Switch } from '@mui/material';
-import { Input, Button, Radio } from './';
+import { FormControlLabel, Switch } from "@mui/material";
+import { Input, Button, Radio } from "./";
 
 const CustomerForm = ({ customer, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -40,12 +40,12 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
     try {
       const amount = parseFloat(paymentAmount);
       const newTotalDue = (customer.totalDue || 0) - amount;
-      
+
       await updateDoc(doc(db, "customers", customer.id), {
         totalDue: newTotalDue,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
-      
+
       setPaymentAmount("");
       onSave(formData); // Refresh the customer data
     } catch (error) {
@@ -77,7 +77,9 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
         <Input
           label="Address"
           value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, address: e.target.value })
+          }
           multiline
           rows={3}
           required
@@ -87,14 +89,16 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
           control={
             <Switch
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               color="success"
             />
           }
           label="Active Status"
         />
 
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex justify-end space-x-3 pt-4 gap-4">
           <Button
             type="button"
             onClick={onCancel}
@@ -103,11 +107,7 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-          >
+          <Button type="submit" variant="contained" color="primary">
             {customer ? "Update" : "Add"} Customer
           </Button>
         </div>
@@ -119,12 +119,21 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {formatTotalDue(customer.totalDue).status}
           </h3>
-          <div className={`p-4 rounded-md mb-4 ${formatTotalDue(customer.totalDue).className.replace('text-', 'bg-').replace('-800', '-50')}`}>
-            <p className={formatTotalDue(customer.totalDue).className.replace('bg-', 'text-').replace('-100', '-800')}>
-              Amount: <span className="font-semibold">{formatTotalDue(customer.totalDue).amount}</span>
+          <div
+            className={`p-4 rounded-md mb-4 ${formatTotalDue(customer.totalDue).className.replace("text-", "bg-").replace("-800", "-50")}`}
+          >
+            <p
+              className={formatTotalDue(customer.totalDue)
+                .className.replace("bg-", "text-")
+                .replace("-100", "-800")}
+            >
+              Amount:{" "}
+              <span className="font-semibold">
+                {formatTotalDue(customer.totalDue).amount}
+              </span>
             </p>
           </div>
-          
+
           <form onSubmit={handlePayment} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Input
@@ -158,7 +167,7 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
                 </div>
               </div>
             </div>
-            
+
             <Button
               type="submit"
               disabled={isProcessingPayment || !paymentAmount}

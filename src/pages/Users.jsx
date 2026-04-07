@@ -14,12 +14,7 @@ import { auth, db } from "../firebase";
 import DataTable from "../Components/DataTable";
 import Modal from "../Components/Modal";
 import { Input, Button, Select, Checkbox } from "../Components";
-import {
-  Switch,
-  FormControlLabel,
-  IconButton,
-  Chip,
-} from "@mui/material";
+import { IconButton, Chip } from "@mui/material";
 import { FiUsers, FiPlus, FiEdit, FiTrash2, FiSettings } from "react-icons/fi";
 
 const Users = () => {
@@ -528,18 +523,15 @@ const Users = () => {
               options={userTypeOptions}
               required
             />
-            <div className="space-y-1">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={userForm.isActive}
-                    onChange={(e) =>
-                      setUserForm({ ...userForm, isActive: e.target.checked })
-                    }
-                    color="success"
-                  />
+            <div className="flex justify-start items-center">
+              <Checkbox
+                toggle
+                checked={userForm.isActive}
+                onChange={(e) =>
+                  setUserForm({ ...userForm, isActive: e.target.checked })
                 }
                 label="Active Status"
+                className="!items-start flex-col-reverse"
               />
             </div>
           </div>
@@ -594,18 +586,11 @@ const Users = () => {
           />
 
           <div className="space-y-1">
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={userTypeForm.isActive}
-                  onChange={(e) =>
-                    setUserTypeForm({
-                      ...userTypeForm,
-                      isActive: e.target.checked,
-                    })
-                  }
-                  color="success"
-                />
+            <Checkbox
+              toggle
+              checked={userTypeForm.isActive}
+              onChange={(e) =>
+                setUserTypeForm({ ...userTypeForm, isActive: e.target.checked })
               }
               label="Active Status"
             />
@@ -619,6 +604,7 @@ const Users = () => {
               {availablePages.map((page) => (
                 <Checkbox
                   key={page.id}
+                  toggle
                   checked={userTypeForm.pages.includes(page.id)}
                   onChange={() => handlePageToggle(page.id)}
                   label={page.name}
@@ -627,20 +613,93 @@ const Users = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              onClick={() => setShowUserTypeModal(false)}
-              variant="outlined"
-              color="inherit"
-            >
-              Cancel
-            </Button>
+          <div className="flex justify-end items-center gap-4 pt-4">
+            <div>
+              {editingUserType && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="inherit"
+                  className={"!leading-5"}
+                  disabled={!userTypeForm.userType.trim()}
+                  onClick={() => {
+                    setEditingUserType(null);
+                    setUserTypeForm({
+                      userType: "",
+                      isActive: true,
+                      pages: [],
+                    });
+                  }}
+                >
+                  New
+                </Button>
+              )}
+            </div>
             <Button type="submit" variant="contained" color="success">
               {editingUserType ? "Update" : "Add"} User Type
             </Button>
           </div>
         </form>
+
+        {/* User Type List Table */}
+        {userTypes.length > 0 && (
+          <div className="mt-6 py-8">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              User Type List
+            </h3>
+            <div className="overflow-auto rounded border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      User Type
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Active Status
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {userTypes.map((ut) => (
+                    <tr key={ut.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 capitalize text-gray-900">
+                        {ut.userType}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Chip
+                          label={ut.isActive ? "Active" : "Inactive"}
+                          color={ut.isActive ? "success" : "error"}
+                          size="small"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-1">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditUserType(ut)}
+                          >
+                            <FiEdit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteUserType(ut.id)}
+                          >
+                            <FiTrash2 />
+                          </IconButton>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

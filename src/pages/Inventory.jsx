@@ -50,7 +50,6 @@ const Inventory = () => {
       q = query(
         collection(db, "dailyInventory"),
         where("date", "==", selectedDate),
-        orderBy("createdAt", "desc"),
       );
     } else if (reportType === "monthly") {
       const startDate = moment(selectedMonth)
@@ -82,17 +81,23 @@ const Inventory = () => {
     const initialData = {};
     products.forEach((product) => {
       initialData[product.id] = {
-        newQty: 0,
+        newQty: "",
         previousQty: product.quantity || 0,
-        waste: 0,
-        sold: 0,
+        waste: "",
+        sold: "",
       };
     });
     setDailyData(initialData);
     setShowModal(true);
   };
 
-  const handleAddSingleProduct = async (productId, addQty, waste, sold) => {
+  const handleAddSingleProduct = async (
+    productId,
+    previousQty,
+    addQty,
+    waste,
+    sold,
+  ) => {
     const today = moment().format("YYYY-MM-DD");
     const product = products.find((p) => p.id === productId);
     const data = dailyData[productId] || {
@@ -151,9 +156,10 @@ const Inventory = () => {
       ...prev,
       [productId]: {
         ...prev[productId],
-        newQty: 0,
-        waste: 0,
-        sold: 0,
+        newQty: "",
+        waste: "",
+        sold: "",
+        previousQty: "",
       },
     }));
 
@@ -248,7 +254,13 @@ const Inventory = () => {
         <Select
           label="Report Type"
           value={reportType}
-          onChange={(e) => setReportType(e.target.value)}
+          onChange={(e) => {
+            const newType = e.target.value;
+            setReportType(newType);
+            if (newType === "daily") {
+              setSelectedDate(moment().format("YYYY-MM-DD"));
+            }
+          }}
           options={[
             { value: "daily", label: "Daily" },
             { value: "monthly", label: "Monthly" },
@@ -262,7 +274,13 @@ const Inventory = () => {
             type="date"
             label="Select Date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e) => {
+              const newDate = e.target.value;
+              setSelectedDate(newDate);
+              if (newDate !== moment().format("YYYY-MM-DD")) {
+                setReportType("daily");
+              }
+            }}
             mainClassName="w-48"
           />
         )}
@@ -315,10 +333,17 @@ const Inventory = () => {
                       waste: 0,
                       sold: 0,
                     };
-                    const addQty = Math.max(0, data.newQty || 0);
+                    const previousQty = Math.max(0, data.previousQty || 0);
+                    const newQty = Math.max(0, data.newQty || 0);
                     const waste = Math.max(0, data.waste || 0);
                     const sold = Math.max(0, data.sold || 0);
-                    handleAddSingleProduct(product.id, addQty, waste, sold);
+                    handleAddSingleProduct(
+                      product.id,
+                      previousQty,
+                      newQty,
+                      waste,
+                      sold,
+                    );
                   }}
                 >
                   Add
@@ -328,9 +353,13 @@ const Inventory = () => {
                 <Input
                   type="number"
                   label="Previous Quantity"
-                  value={dailyData[product.id]?.previousQty || 0}
+                  value={dailyData[product.id]?.previousQty || ""}
+                  placeholder="0"
                   onChange={(e) => {
-                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    const value =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(0, parseFloat(e.target.value) || 0);
                     setDailyData((prev) => ({
                       ...prev,
                       [product.id]: {
@@ -343,10 +372,14 @@ const Inventory = () => {
                 />
                 <Input
                   type="number"
-                  label="Add Quantity"
-                  value={dailyData[product.id]?.newQty || 0}
+                  label="New Quantity"
+                  value={dailyData[product.id]?.newQty || ""}
+                  placeholder="0"
                   onChange={(e) => {
-                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    const value =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(0, parseFloat(e.target.value) || 0);
                     setDailyData((prev) => ({
                       ...prev,
                       [product.id]: {
@@ -360,9 +393,13 @@ const Inventory = () => {
                 <Input
                   type="number"
                   label="Waste Quantity"
-                  value={dailyData[product.id]?.waste || 0}
+                  value={dailyData[product.id]?.waste || ""}
+                  placeholder="0"
                   onChange={(e) => {
-                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    const value =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(0, parseFloat(e.target.value) || 0);
                     setDailyData((prev) => ({
                       ...prev,
                       [product.id]: {
@@ -376,9 +413,13 @@ const Inventory = () => {
                 <Input
                   type="number"
                   label="Sold Quantity"
-                  value={dailyData[product.id]?.sold || 0}
+                  value={dailyData[product.id]?.sold || ""}
+                  placeholder="0"
                   onChange={(e) => {
-                    const value = Math.max(0, parseFloat(e.target.value) || 0);
+                    const value =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(0, parseFloat(e.target.value) || 0);
                     setDailyData((prev) => ({
                       ...prev,
                       [product.id]: {

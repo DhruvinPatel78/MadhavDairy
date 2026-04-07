@@ -6,7 +6,7 @@ import {
   doc,
   getDocs,
   query,
-  where
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { Modal, SearchableDropdown, Input, DateInput, Radio } from "./";
@@ -62,15 +62,12 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [
-        customersSnapshot,
-        productsSnapshot,
-        dailyInventorySnapshot,
-      ] = await Promise.all([
-        getDocs(collection(db, "customers")),
-        getDocs(collection(db, "products")),
-        getDocs(collection(db, "dailyInventory")),
-      ]);
+      const [customersSnapshot, productsSnapshot, dailyInventorySnapshot] =
+        await Promise.all([
+          getDocs(collection(db, "customers")),
+          getDocs(collection(db, "products")),
+          getDocs(collection(db, "dailyInventory")),
+        ]);
 
       setCustomers(
         customersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
@@ -92,14 +89,14 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
       // Calculate daily stats from dailyInventory
       const stats = {};
       const today = moment().format("YYYY-MM-DD");
-      
-      dailyInventorySnapshot.docs.forEach(doc => {
+
+      dailyInventorySnapshot.docs.forEach((doc) => {
         const data = doc.data();
         if (data.date === today) {
           stats[data.productId] = {
             todayAdded: (data.newAdded || 0) + (data.previousRemaining || 0),
             todaysells: data.sold || 0,
-            available: data.remainingQty || 0
+            available: data.remainingQty || 0,
           };
         }
       });
@@ -163,10 +160,10 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
   };
 
   const updateItemQuantity = (index, newQuantity) => {
-    if (!newQuantity || newQuantity.trim() === '') return;
+    if (!newQuantity || newQuantity.trim() === "") return;
     const quantity = parseFloat(newQuantity);
     if (quantity < 0.1) return;
-    
+
     const updatedItems = [...selectedItems];
     updatedItems[index].quantity = quantity;
     updatedItems[index].totalPrice =
@@ -244,18 +241,19 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
           const dailyInventoryQ = query(
             collection(db, "dailyInventory"),
             where("productId", "==", item.productId),
-            where("date", "==", today)
+            where("date", "==", today),
           );
           const dailyInventorySnapshot = await getDocs(dailyInventoryQ);
           if (!dailyInventorySnapshot.empty) {
             const dailyInventoryDoc = dailyInventorySnapshot.docs[0];
             const currentData = dailyInventoryDoc.data();
             const newSold = (currentData.sold || 0) + item.quantity;
-            const newRemaining = currentData.totalAvailable - newSold - (currentData.waste || 0);
-            
+            const newRemaining =
+              currentData.totalAvailable - newSold - (currentData.waste || 0);
+
             await updateDoc(doc(db, "dailyInventory", dailyInventoryDoc.id), {
               sold: newSold,
-              remainingQty: Math.max(0, newRemaining)
+              remainingQty: Math.max(0, newRemaining),
             });
           } else {
             // Create daily inventory record if doesn't exist
@@ -268,8 +266,11 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
               totalAvailable: product.quantity || 0,
               sold: item.quantity,
               waste: 0,
-              remainingQty: Math.max(0, (product.quantity || 0) - item.quantity),
-              createdAt: new Date()
+              remainingQty: Math.max(
+                0,
+                (product.quantity || 0) - item.quantity,
+              ),
+              createdAt: new Date(),
             });
           }
 
@@ -389,7 +390,9 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
                         <div className={"flex gap-2"}>
                           <span className="font-medium">Available:</span>
                           <span className={"font-bold"}>
-                            {dailyStats[selectedProduct.id]?.available || selectedProduct.quantity || 0}
+                            {dailyStats[selectedProduct.id]?.available ||
+                              selectedProduct.quantity ||
+                              0}
                           </span>
                         </div>
                       </div>
@@ -427,7 +430,7 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
                 <div className="space-y-3">
                   <SearchableDropdown
                     options={products.map((product) => ({
-                      label: `${product.name} ( ${product.quantity || 0} )`,
+                      label: `${product.name} ( ${dailyStats[product.id]?.available || product.quantity || 0} )`,
                       value: product.id,
                     }))}
                     value={currentProduct}
@@ -609,7 +612,7 @@ const NewSellModal = ({ isOpen, onClose, onsellCreated }) => {
                           {item.unit} × ₹{item.pricePerUnit}
                         </span>
                       </div>
-                      <div className="w-1/5flex items-center gap-2">
+                      <div className="w-1/5 flex items-center justify-end gap-2">
                         <span className="font-medium">
                           ₹{item.totalPrice.toFixed(2)}
                         </span>
