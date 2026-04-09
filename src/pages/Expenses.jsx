@@ -69,7 +69,8 @@ const Expenses = () => {
 
   const dateFilterOptions = [
     { label: "Today", value: "today" },
-    { label: "This Month", value: "monthly" },
+    { label: "This month", value: "monthly" },
+    { label: "All Records", value: "all" },
     { label: "Custom Date", value: "custom" },
   ];
 
@@ -97,34 +98,21 @@ const Expenses = () => {
 
       switch (dateFilter) {
         case "today":
-          startDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-          );
-          endDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate() + 1,
-          );
+          startDate = moment().startOf("day").toDate();
+          endDate = moment().add(1, "day").startOf("day").toDate();
           break;
         case "monthly":
-          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-          endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          startDate = moment().startOf("month").toDate();
+          endDate = moment().add(1, "month").startOf("month").toDate();
+          break;
+        case "all":
+          startDate = moment().subtract(12, "months").startOf("day").toDate();
+          endDate = moment().add(1, "day").startOf("day").toDate();
           break;
         case "custom":
           if (!customDate) return;
-          const selected = new Date(customDate);
-          startDate = new Date(
-            selected.getFullYear(),
-            selected.getMonth(),
-            selected.getDate(),
-          );
-          endDate = new Date(
-            selected.getFullYear(),
-            selected.getMonth(),
-            selected.getDate() + 1,
-          );
+          startDate = moment(customDate).startOf("day").toDate();
+          endDate = moment(customDate).add(1, "day").startOf("day").toDate();
           break;
         default:
           startDate = new Date(0);

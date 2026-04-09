@@ -79,6 +79,16 @@ const Sells = () => {
           });
         }
         break;
+      case "all":
+        const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        const nextDayAll = new Date(now);
+        nextDayAll.setDate(nextDayAll.getDate() + 1);
+        filtered = sells.filter((sell) => {
+          const sellDate =
+            sell.createdAt?.toDate?.() || new Date(sell.createdAt);
+          return sellDate >= lastYear && sellDate < nextDayAll;
+        });
+        break;
     }
 
     setFilteredsells(filtered);
@@ -183,6 +193,7 @@ const Sells = () => {
             options={[
               { label: "Today", value: "today" },
               { label: "This Month", value: "monthly" },
+              { label: "All Records", value: "all" },
               { label: "Custom Date", value: "custom" },
             ]}
             value={dateFilter}
@@ -211,7 +222,7 @@ const Sells = () => {
       </div>
 
       <DataTable
-        title={`sells Records - ${dateFilter === "today" ? "Today" : dateFilter === "monthly" ? "This Month" : "Custom Date"}`}
+        title={`sells Records - ${dateFilter === "today" ? "Today" : dateFilter === "monthly" ? "This Month" : dateFilter === "all" ? "All Records" : "Custom Date"}`}
         columns={columns}
         data={filteredsells}
         renderRow={renderRow}

@@ -102,20 +102,16 @@ const ProductDetails = () => {
 
       switch (dateFilter) {
         case "today":
-          startDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-          );
-          endDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate() + 1,
-          );
+          startDate = moment().startOf("day").toDate();
+          endDate = moment().add(1, "day").startOf("day").toDate();
           break;
         case "monthly":
-          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-          endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          startDate = moment().startOf("month").toDate();
+          endDate = moment().add(1, "month").startOf("month").toDate();
+          break;
+        case "all":
+          startDate = moment().subtract(12, "months").startOf("day").toDate();
+          endDate = moment().add(1, "day").startOf("day").toDate();
           break;
         case "custom":
           if (!customDate) {
@@ -124,17 +120,8 @@ const ProductDetails = () => {
             setLoading(false);
             return;
           }
-          const selected = new Date(customDate);
-          startDate = new Date(
-            selected.getFullYear(),
-            selected.getMonth(),
-            selected.getDate(),
-          );
-          endDate = new Date(
-            selected.getFullYear(),
-            selected.getMonth(),
-            selected.getDate() + 1,
-          );
+          startDate = moment(customDate).startOf("day").toDate();
+          endDate = moment(customDate).add(1, "day").startOf("day").toDate();
           break;
         default:
           startDate = new Date(0);
@@ -451,8 +438,9 @@ const ProductDetails = () => {
                   className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
                 >
                   <option value="today">Today</option>
-                  <option value="monthly">This Month</option>
                   <option value="custom">Custom Date</option>
+                  <option value="monthly">This Month</option>
+                  <option value="all">All Records</option>
                 </select>
 
                 {dateFilter === "custom" && (

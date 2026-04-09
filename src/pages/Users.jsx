@@ -35,6 +35,7 @@ const Users = () => {
     email: "",
     username: "",
     password: "",
+    confirmPassword: "",
     address: "",
     userType: "",
     userPay: "",
@@ -106,10 +107,15 @@ const Users = () => {
 
   const handleUserSubmit = async (e) => {
     e.preventDefault();
+    if (userForm.password !== userForm.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
     try {
+      const { confirmPassword, ...restForm } = userForm;
       const userData = {
-        ...userForm,
-        userPay: parseFloat(userForm.userPay) || 0,
+        ...restForm,
+        userPay: parseFloat(restForm.userPay) || 0,
         createdAt: editingUser ? editingUser.createdAt : new Date(),
         updatedAt: new Date(),
       };
@@ -128,6 +134,7 @@ const Users = () => {
         email: "",
         username: "",
         password: "",
+        confirmPassword: "",
         address: "",
         userType: "",
         userPay: "",
@@ -154,7 +161,6 @@ const Users = () => {
         await addDoc(collection(db, "userTypes"), userTypeData);
       }
 
-      setShowUserTypeModal(false);
       setEditingUserType(null);
       setUserTypeForm({
         userType: "",
@@ -175,6 +181,7 @@ const Users = () => {
       email: user.email || "",
       username: user.username || "",
       password: "",
+      confirmPassword: "",
       address: user.address || "",
       userType: user.userType || "",
       userPay: user.userPay?.toString() || "",
@@ -450,6 +457,7 @@ const Users = () => {
             email: "",
             username: "",
             password: "",
+            confirmPassword: "",
             address: "",
             userType: "",
             userPay: "",
@@ -457,7 +465,7 @@ const Users = () => {
           });
         }}
         title={editingUser ? "Edit User" : "Add New User"}
-        size="lg"
+        size="md"
       >
         <form onSubmit={handleUserSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -497,15 +505,34 @@ const Users = () => {
               required
             />
           </div>
-          <Input
-            label="Password"
-            type="password"
-            value={userForm.password}
-            onChange={(e) =>
-              setUserForm({ ...userForm, password: e.target.value })
-            }
-            required={!editingUser}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Password"
+              type="password"
+              value={userForm.password}
+              onChange={(e) =>
+                setUserForm({ ...userForm, password: e.target.value })
+              }
+              required={!editingUser}
+            />
+            <div>
+              <Input
+                label="Confirm Password"
+                type="password"
+                value={userForm.confirmPassword}
+                onChange={(e) =>
+                  setUserForm({ ...userForm, confirmPassword: e.target.value })
+                }
+                required={!editingUser || !!userForm.password}
+              />
+              {userForm.confirmPassword &&
+                userForm.password !== userForm.confirmPassword && (
+                  <p className="!text-red-500 !text-xs">
+                    Passwords do not match
+                  </p>
+                )}
+            </div>
+          </div>
           <Input
             label="Address"
             value={userForm.address}
@@ -621,7 +648,6 @@ const Users = () => {
                   variant="outlined"
                   color="inherit"
                   className={"!leading-5"}
-                  disabled={!userTypeForm.userType.trim()}
                   onClick={() => {
                     setEditingUserType(null);
                     setUserTypeForm({
@@ -635,7 +661,12 @@ const Users = () => {
                 </Button>
               )}
             </div>
-            <Button type="submit" variant="contained" color="success">
+            <Button
+              type="submit"
+              variant="contained"
+              color="success"
+              disabled={!userTypeForm.userType.trim()}
+            >
               {editingUserType ? "Update" : "Add"} User Type
             </Button>
           </div>

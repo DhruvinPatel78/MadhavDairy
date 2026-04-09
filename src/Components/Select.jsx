@@ -1,30 +1,31 @@
-import { FormControl, Select as MuiSelect, MenuItem } from '@mui/material';
+import { FormControl, Select as MuiSelect, MenuItem } from "@mui/material";
 
-const Select = ({ 
-  label, 
-  value, 
-  onChange, 
-  options = [], 
+const Select = ({
+  label,
+  value,
+  onChange,
+  options = [],
   placeholder = "Select an option",
   required = false,
   className = "",
+  mainClassName = "",
   size = "small",
-  ...props 
+  ...props
 }) => {
   return (
-    <div>
+    <div className={mainClassName}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      <FormControl fullWidth size={size} required={required} className={className}>
-        <MuiSelect
-          value={value}
-          onChange={onChange}
-          displayEmpty
-          {...props}
-        >
+      <FormControl
+        fullWidth
+        size={size}
+        required={required}
+        className={className}
+      >
+        <MuiSelect value={value} onChange={onChange} displayEmpty {...props}>
           {placeholder && (
             <MenuItem value="" disabled>
               <span className="text-gray-500">{placeholder}</span>

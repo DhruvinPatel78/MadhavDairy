@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { FormControlLabel, Switch } from '@mui/material';
-import { Input, Button, Select } from './';
+import { FormControlLabel, Switch } from "@mui/material";
+import { Input, Button, Select } from "./";
 
 const ProductForm = ({ product, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -37,43 +37,57 @@ const ProductForm = ({ product, onSave, onCancel }) => {
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="w-full flex flex-col justify-between items-center gap-4"
+    >
       <Input
         label="Product Name"
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        mainClassName={"!w-full"}
         required
       />
 
-      <Input
-        label="Price per Unit (₹)"
-        type="number"
-        inputProps={{ step: "0.01" }}
-        value={formData.pricePerUnit}
-        onChange={(e) => setFormData({ ...formData, pricePerUnit: e.target.value })}
-        required
-      />
+      <div className={"!w-full flex gap-4"}>
+        <Input
+          label="Price per Unit (₹)"
+          type="number"
+          inputProps={{ step: "0.01" }}
+          value={formData.pricePerUnit}
+          onChange={(e) =>
+            setFormData({ ...formData, pricePerUnit: e.target.value })
+          }
+          mainClassName={"!w-full"}
+          required
+        />
 
-      <Select
-        label="Unit"
-        value={formData.unit}
-        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-        options={unitOptions}
-        required
-      />
+        <Select
+          label="Unit"
+          value={formData.unit}
+          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+          options={unitOptions}
+          mainClassName={"!w-full"}
+          required
+        />
+      </div>
 
       <FormControlLabel
         control={
           <Switch
             checked={formData.isActive}
-            onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            onChange={(e) =>
+              setFormData({ ...formData, isActive: e.target.checked })
+            }
+            // className={"!w-full"}
             color="success"
           />
         }
+        className={"!w-full"}
         label="Active Status"
       />
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex justify-end space-x-3 pt-4 gap-4 !w-full">
         <Button
           type="button"
           onClick={onCancel}
@@ -82,11 +96,7 @@ const ProductForm = ({ product, onSave, onCancel }) => {
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-        >
+        <Button type="submit" variant="contained" color="primary">
           {product ? "Update" : "Add"} Product
         </Button>
       </div>

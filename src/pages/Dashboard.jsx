@@ -10,8 +10,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { MdInventory, MdPeople, MdAttachMoney, MdAdd } from "react-icons/md";
-import { Box, Grid, Alert } from '@mui/material';
-import { PageHeader, StatCard, Button, Loading } from '../Components';
+import { Box, Grid, Alert } from "@mui/material";
+import { PageHeader, StatCard, Button, Loading } from "../Components";
 import moment from "moment";
 
 const Dashboard = () => {
@@ -45,10 +45,12 @@ const Dashboard = () => {
       // Get products count
       const productsSnap = await getDocs(collection(db, "products"));
       const productsCount = productsSnap.size;
+      console.log("products : ", productsSnap, productsCount);
 
       // Get customers count
       const customersSnap = await getDocs(collection(db, "customers"));
       const customersCount = customersSnap.size;
+      console.log("customer : ", customersSnap, customersCount);
 
       // Get today's sells total
       const today = moment().startOf("day").toDate();
@@ -77,27 +79,18 @@ const Dashboard = () => {
       }, 0);
 
       // Get today's cash sells and expenses for available cash calculation
-      const cashsellsQuery = query(
-        collection(db, "sells"),
-        where("createdAt", ">=", Timestamp.fromDate(today)),
-        where("createdAt", "<", Timestamp.fromDate(tomorrow)),
-        where("paymentMode", "==", "cash"),
-      );
-      const cashsellsSnap = await getDocs(cashsellsQuery);
-      const cashsellsTotal = cashsellsSnap.docs.reduce((total, doc) => {
-        return total + (doc.data().paidAmount || 0);
-      }, 0);
+      // Re-using the documents already fetched for today's sells and expenses
+      const cashsellsTotal = todaysellsSnap.docs
+        .filter((doc) => doc.data().paymentMode === "cash" || doc.data().paymentMode?.toLowerCase() === "cash")
+        .reduce((total, doc) => {
+          return total + (doc.data().paidAmount || 0);
+        }, 0);
 
-      const cashExpensesQuery = query(
-        collection(db, "expenses"),
-        where("timestamp", ">=", today),
-        where("timestamp", "<", tomorrow),
-        where("paymentMode", "==", "cash"),
-      );
-      const cashExpensesSnap = await getDocs(cashExpensesQuery);
-      const cashExpensesTotal = cashExpensesSnap.docs.reduce((total, doc) => {
-        return total + (doc.data().amount || 0);
-      }, 0);
+      const cashExpensesTotal = expensesSnap.docs
+        .filter((doc) => doc.data().paymentMode === "cash" || doc.data().paymentMode?.toLowerCase() === "cash")
+        .reduce((total, doc) => {
+          return total + (doc.data().amount || 0);
+        }, 0);
 
       // Get cash credits/debits
       const cashEntriesQuery = query(
@@ -130,12 +123,11 @@ const Dashboard = () => {
     }
   };
 
+  console.log("Stats : ", stats);
   if (!user) {
     return (
       <Box p={3}>
-        <Alert severity="warning">
-          Please log in to access dashboard.
-        </Alert>
+        <Alert severity="warning">Please log in to access dashboard.</Alert>
       </Box>
     );
   }
@@ -146,8 +138,8 @@ const Dashboard = () => {
 
   return (
     <Box p={3}>
-      <PageHeader 
-        title="Dashboard" 
+      <PageHeader
+        title="Dashboard"
         actions={[
           <Button
             key="new-sell"
@@ -155,7 +147,7 @@ const Dashboard = () => {
             startIcon={<MdAdd />}
           >
             New Sell
-          </Button>
+          </Button>,
         ]}
       />
 
@@ -169,7 +161,7 @@ const Dashboard = () => {
             onClick={() => navigate("/products")}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4} lg={2.4}>
           <StatCard
             title="Total Customers"
@@ -179,7 +171,7 @@ const Dashboard = () => {
             onClick={() => navigate("/customers")}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4} lg={2.4}>
           <StatCard
             title="Today's Sales"
@@ -189,7 +181,7 @@ const Dashboard = () => {
             onClick={() => navigate("/sells-history")}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4} lg={2.4}>
           <StatCard
             title="Today's Expenses"
@@ -199,7 +191,7 @@ const Dashboard = () => {
             onClick={() => navigate("/expenses")}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={4} lg={2.4}>
           <StatCard
             title="Available Cash"
